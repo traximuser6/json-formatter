@@ -2,6 +2,8 @@
 .vscode
 .phpIntel
 .DS_Store
+
+# ignore formats
 *.log
 *.tmp
 *.bak

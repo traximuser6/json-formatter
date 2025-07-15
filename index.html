@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Cleaner & Formatter</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>JSON Cleaner & Formatter</h1>
+    </header>
+    <main>
+        <div class="editor-container">
+            <div class="editor-panel">
+                <label for="uncleanJson">Unclean JSON Input:</label>
+                <textarea id="uncleanJson" placeholder='Paste your raw JSON here. Example: \{"data":\{"updated":\{"updated":"[\{\"invoice\":\{\"name\":\"INV-001\",\"attachment\":\"\{\\\"file\\\":\\\"doc1.pdf\\\"\}\"\}\},\{\"invoice\":\{\"name\":\"INV-002\",\"attachment\":\"\{\\\"file\\\":\\\"doc2.pdf\\\"\}\"\}\}]"\},"status":"success"\}'></textarea>
+            </div>
+            <div class="editor-panel">
+                <label for="cleanJson">Cleaned & Formatted JSON Output:</label>
+                <textarea id="cleanJson" readonly></textarea>
+            </div>
+        </div>
+        <button id="parseButton">Clean & Format JSON</button>
+    </main>
+    <script src="script.js" defer></script>
+</body>
+</html>

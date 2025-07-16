@@ -48,9 +48,12 @@
   </main>
 
   <footer class="text-center text-gray-500 py-4 text-sm border-t mt-10">
-    &copy; 2025 JSON Formatter Tool
+    &copy; <span id="year"></span> JSON Formatter Tool
   </footer>
 
   <script src="script.js" defer></script>
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>

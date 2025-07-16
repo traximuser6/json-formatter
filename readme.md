@@ -1,8 +1,5 @@
 
-
-```markdown
 # 🧹 JSON Cleaner
-```
 
 
 A lightweight Node.js tool to **parse, clean, and normalize messy JSON** — especially helpful when dealing with **stringified or deeply nested JSON** from legacy systems or third-party APIs.

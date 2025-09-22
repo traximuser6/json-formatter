@@ -13,39 +13,41 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
   <link rel="stylesheet" href="style.css">
-
 </head>
 <body class="min-h-screen flex flex-col">
-
 <header class="bg-gradient-to-r from-sky-600 to-indigo-600 text-white py-6 shadow">
   <div class="container mx-auto px-4">
     <h1 class="text-2xl md:text-3xl font-semibold text-center">JSON Cleaner & Formatter — Super Recover</h1>
-    <p class="text-center muted small mt-1" style="color: white">Best-effort cleaning for badly formatted, escaped, or double-encoded JSON. Shows console details & notifications.</p>
+    <p class="text-center muted small mt-1" style="color: white">Best-effort cleaning for badly formatted, escaped, or double-encoded JSON.</p>
   </div>
 </header>
 
 <main class="container mx-auto px-4 py-8 flex-1">
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-    <div class="panel">
+    <div class="panel relative">
       <div class="flex items-start justify-between">
         <div>
           <label for="uncleanJson" class="font-medium">Unclean JSON Input</label>
-          <p class="muted small mt-1">Paste your raw / broken JSON here. Example: double-encoded strings, stray slashes like <span class="code-note">\/</span>, trailing commas, etc.</p>
+          <p class="muted small mt-1">Paste your raw / broken JSON here (e.g., double-encoded strings, stray slashes, trailing commas).</p>
         </div>
-        <div class="text-right flex  single-line">
-          <button id="sampleBtn" class="px-3 py-1 bg-white border rounded text-sm mr-2">Insert sample</button>
-          <button id="clearInput" class="px-3 py-1 bg-white border rounded text-sm">Clear</button>
+        <div class="text-right flex single-line">
+          <button id="sampleBtn" class="btn btn-secondary mr-2">Insert Sample</button>
+          <button id="clearInput" class="btn btn-secondary">Clear</button>
         </div>
       </div>
-
-      <textarea id="uncleanJson" class="editor mt-3 w-full font-mono text-sm p-4 border rounded" placeholder='Paste raw JSON here...'></textarea>
-
+      <textarea id="uncleanJson" class="editor mt-3 w-full font-mono text-sm p-4 border rounded" placeholder="Paste raw JSON here..."></textarea>
       <div class="mt-3 flex gap-2 single-line">
-        <button id="parseButton" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded shadow">Clean & Format</button>
-        <button id="beautifyButton" class="px-4 py-2 bg-white border rounded">Try Beautify</button>
-        <button id="minifyButton" class="px-4 py-2 bg-white border rounded">Minify</button>
-        <button id="copyInput" class="px-4 py-2 bg-white border rounded">Copy Input</button>
+        <button id="parseButton" class="btn btn-primary">Clean & Format</button>
+        <button id="beautifyButton" class="btn btn-secondary">Beautify</button>
+        <button id="minifyButton" class="btn btn-secondary">Minify</button>
+        <button id="copyInput" class="btn btn-secondary">Copy Input</button>
+      </div>
+      <!-- Loader -->
+      <div id="loader" class="loader hidden">
+        <svg class="animate-spin h-6 w-6 text-sky-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8 8 8 0 01-8-8z"></path>
+        </svg>
       </div>
     </div>
 
@@ -53,44 +55,39 @@
       <div class="flex items-start justify-between">
         <div>
           <label for="cleanJson" class="font-medium">Cleaned & Formatted JSON Output</label>
-          <p class="muted small mt-1">Result will appear here (read-only). You can copy or download it.</p>
+          <p class="muted small mt-1">Result appears here (read-only). Copy or download it.</p>
         </div>
         <div class="text-right">
-          <button id="copyOutput" class="px-3 py-1 bg-white border rounded text-sm mr-2">Copy</button>
-          <button id="downloadOutput" class="px-3 py-1 bg-white border rounded text-sm">Download</button>
+          <button id="copyOutput" class="btn btn-secondary mr-2">Copy</button>
+          <button id="downloadOutput" class="btn btn-secondary">Download</button>
         </div>
       </div>
-
       <textarea id="cleanJson" class="editor mt-3 w-full font-mono text-sm p-4 bg-gray-50 border rounded" readonly></textarea>
-
       <div class="mt-3">
         <div class="muted small">Diagnostics</div>
         <pre id="diagnostics" class="code-note mt-2 p-3 bg-gray-50 rounded h-28 overflow-auto border"></pre>
       </div>
     </div>
-
   </div>
 
   <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
     <div class="panel small">
       <div class="font-medium">How it tries to repair</div>
       <ul class="mt-2 list-disc ml-5 muted small">
-        <li>Attempt raw <code>JSON.parse</code> first</li>
-        <li>Remove unescaped control chars and stray invisible bytes</li>
-        <li>Fix trailing commas and collapse repeated backslashes</li>
-        <li>Convert sensible single quoted JSON to double quotes</li>
-        <li>Quote unquoted keys using a conservative heuristic</li>
-        <li>Extract first JSON-like substring if the whole input contains noise</li>
-        <li>Recursively parse nested stringified JSON fields</li>
-        <li>Handle double-escaping and stray slashes</li>
+        <li>Attempts raw <code>JSON.parse</code> first</li>
+        <li>Removes unescaped control chars and stray bytes</li>
+        <li>Fixes trailing commas and collapses backslashes</li>
+        <li>Converts single quotes to double quotes</li>
+        <li>Quotes unquoted keys conservatively</li>
+        <li>Extracts first JSON-like substring</li>
+        <li>Recursively parses nested stringified JSON</li>
+        <li>Handles double-escaping and stray slashes</li>
       </ul>
     </div>
-
     <div class="panel small">
       <div class="font-medium">Notes & limits</div>
-      <p class="muted mt-2">This is a best-effort fixer. It tries many heuristics — if your JSON is extremely ambiguous or the repairs would risk changing intended text content, manual fixing may still be needed. All repair steps are logged to the diagnostics area and browser console. Max input: 5MB.</p>
+      <p class="muted mt-2">Best-effort fixer. Extremely ambiguous JSON may require manual fixes. Repair steps logged to diagnostics and console. Max input: 5MB.</p>
     </div>
-
     <div class="panel small" style="overflow: scroll">
       <div class="font-medium">Example</div>
       <p class="muted mt-2 code-note">["{\"NMLS\":2046912,\"Role\":2,\"Email\":\"zgannam@westcapitallending.com\",\"Phone\":\"(949) 404-5573\",\"UserId\":1636,..."]</p>
@@ -103,6 +100,5 @@
 </main>
 
 <script src="script.js"></script>
-
 </body>
 </html>

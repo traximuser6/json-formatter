@@ -1,11 +1,11 @@
 document.getElementById('year').textContent = new Date().getFullYear();
 
 toastr.options = {
-    "closeButton": true,
-    "progressBar": true,
-    "positionClass": "toast-top-right",
-    "preventDuplicates": true,
-    "timeOut": "4000"
+    closeButton: true,
+    progressBar: true,
+    positionClass: "toast-top-right",
+    preventDuplicates: true,
+    timeOut: 4000
 };
 
 const uncleanEl = document.getElementById('uncleanJson');
@@ -19,6 +19,7 @@ const copyOutputBtn = document.getElementById('copyOutput');
 const downloadBtn = document.getElementById('downloadOutput');
 const sampleBtn = document.getElementById('sampleBtn');
 const clearInputBtn = document.getElementById('clearInput');
+const loader = document.getElementById('loader');
 
 function logDiag(...args) {
     console.log(...args);
@@ -184,66 +185,106 @@ function minifyJson(obj) {
     return JSON.stringify(obj);
 }
 
-parseBtn.addEventListener('click', () => {
+function showLoader() {
+    loader.classList.remove('hidden');
+    parseBtn.disabled = true;
+    beautifyBtn.disabled = true;
+    minifyBtn.disabled = true;
+}
+
+function hideLoader() {
+    loader.classList.add('hidden');
+    parseBtn.disabled = false;
+    beautifyBtn.disabled = false;
+    minifyBtn.disabled = false;
+}
+
+parseBtn.addEventListener('click', async () => {
     diagEl.textContent = '';
     cleanEl.value = '';
     const raw = uncleanEl.value.trim();
-    if (!raw) return toastr.info('Paste JSON first.');
+    if (!raw) {
+        toastr.info('Paste JSON first.');
+        return;
+    }
+    showLoader();
+    const start = performance.now();
     try {
         const parsed = robustCleanParse(raw);
         cleanEl.value = formatJson(parsed);
-        toastr.success('Cleaned successfully ✅');
+        const time = ((performance.now() - start) / 1000).toFixed(3);
+        toastr.success(`Cleaned JSON successfully in ${time}s ✅`);
         logDiag('Output length:', cleanEl.value.length, 'chars');
     } catch (err) {
-        toastr.error('Parsing failed — check diagnostics.');
+        toastr.error(`Parsing failed: ${err.message}`);
         logDiag('Error:', err.message);
+    } finally {
+        hideLoader();
     }
 });
 
-beautifyBtn.addEventListener('click', () => {
+beautifyBtn.addEventListener('click', async () => {
     diagEl.textContent = '';
     const raw = uncleanEl.value.trim();
-    if (!raw) return toastr.info('No input.');
+    if (!raw) {
+        toastr.info('No input.');
+        return;
+    }
+    showLoader();
+    const start = performance.now();
     try {
         const p = JSON.parse(raw);
         cleanEl.value = formatJson(p);
-        toastr.success('Beautified with native parse');
+        const time = ((performance.now() - start) / 1000).toFixed(3);
+        toastr.success(`Beautified JSON in ${time}s`);
     } catch (e) {
         try {
             const parsed = robustCleanParse(raw);
             cleanEl.value = formatJson(parsed);
-            toastr.success('Beautified after repairs');
+            const time = ((performance.now() - start) / 1000).toFixed(3);
+            toastr.success(`Beautified JSON after repairs in ${time}s`);
         } catch (err) {
-            toastr.error('Beautify failed');
+            toastr.error(`Beautify failed: ${err.message}`);
             logDiag('Error:', err.message);
         }
+    } finally {
+        hideLoader();
     }
 });
 
-minifyBtn.addEventListener('click', () => {
+minifyBtn.addEventListener('click', async () => {
     diagEl.textContent = '';
     const raw = uncleanEl.value.trim();
-    if (!raw) return toastr.info('No input.');
+    if (!raw) {
+        toastr.info('No input.');
+        return;
+    }
+    showLoader();
+    const start = performance.now();
     try {
         const p = JSON.parse(raw);
         cleanEl.value = minifyJson(p);
-        toastr.success('Minified with native parse');
+        const time = ((performance.now() - start) / 1000).toFixed(3);
+        toastr.success(`Minified JSON in ${time}s`);
     } catch (e) {
         try {
             const parsed = robustCleanParse(raw);
             cleanEl.value = minifyJson(parsed);
-            toastr.success('Minified after repairs');
+            const time = ((performance.now() - start) / 1000).toFixed(3);
+            toastr.success(`Minified JSON after repairs in ${time}s`);
         } catch (err) {
-            toastr.error('Minify failed');
+            toastr.error(`Minify failed: ${err.message}`);
             logDiag('Error:', err.message);
         }
+    } finally {
+        hideLoader();
     }
 });
 
 copyInputBtn.addEventListener('click', async () => {
     try {
         await navigator.clipboard.writeText(uncleanEl.value);
-        toastr.success('Input copied');
+        toastr.success('Input copied to clipboard');
     } catch (e) {
         toastr.error('Copy failed');
         logDiag('Copy error:', e);
@@ -251,10 +292,13 @@ copyInputBtn.addEventListener('click', async () => {
 });
 
 copyOutputBtn.addEventListener('click', async () => {
-    if (!cleanEl.value) return toastr.info('No output');
+    if (!cleanEl.value) {
+        toastr.info('No output to copy');
+        return;
+    }
     try {
         await navigator.clipboard.writeText(cleanEl.value);
-        toastr.success('Output copied');
+        toastr.success('Output copied to clipboard');
     } catch (e) {
         toastr.error('Copy failed');
         logDiag('Copy error:', e);
@@ -262,15 +306,18 @@ copyOutputBtn.addEventListener('click', async () => {
 });
 
 downloadBtn.addEventListener('click', () => {
-    if (!cleanEl.value) return toastr.info('No output');
+    if (!cleanEl.value) {
+        toastr.info('No output to download');
+        return;
+    }
     downloadText('cleaned.json', cleanEl.value);
     toastr.success('Downloaded cleaned.json');
 });
 
 sampleBtn.addEventListener('click', () => {
-    const sample = `["{\\\"NMLS\\\":2046912,\\\"Role\\\":2,\\\"Email\\\":\\\"zgannam@westcapitallending.com\\\",\\\"Phone\\\":\\\"(949) 404-5573\\\",\\\"UserId\\\":1636,\\\"IsActive\\\":1,\\\"JobTitle\\\":\\\"Branch .....................Manager\\\",\\\"LastName\\\":\\\"Gannam\\\",\\\"NickName\\\":null,\\\"TeamName\\\":\\\"\\\",\\\"FirstName\\\":\\\"Zoe\\\",\\\"Agent\\\":null}"]`;
+    const sample = `["{\\\"NMLS\\\":2046912,\\\"Role\\\":2,\\\"Email\\\":\\\"zgannam@westcapitallending.com\\\",\\\"Phone\\\":\\\"(949) 404-5573\\\",\\\"UserId\\\":1636,\\\"IsActive\\\":1,\\\"JobTitle\\\":\\\"Branch Manager\\\",\\\"LastName\\\":\\\"Gannam\\\",\\\"NickName\\\":null,\\\"TeamName\\\":\\\"\\\",\\\"FirstName\\\":\\\"Zoe\\\",\\\"Agent\\\":null}"]`;
     uncleanEl.value = sample;
-    toastr.info('Sample inserted');
+    toastr.info('Sample JSON inserted');
 });
 
 clearInputBtn.addEventListener('click', () => {

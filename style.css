@@ -1,109 +1,41 @@
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f4f7f6;
-    color: #333;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: #f3f4f6;
 }
 
-header {
-    background-color: #282c34;
-    color: #fff;
-    padding: 20px;
-    text-align: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-h1 {
-    margin: 0;
-    font-size: 2em;
-}
-
-main {
-    flex-grow: 1;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-}
-
-.editor-container {
-    display: flex;
-    width: 100%;
-    max-width: 1200px;
-    gap: 20px;
-    flex-wrap: wrap; /* Allow wrapping on smaller screens */
-}
-
-.editor-panel {
-    flex: 1;
-    min-width: 300px; /* Minimum width before wrapping */
-    display: flex;
-    flex-direction: column;
-}
-
-label {
-    margin-bottom: 8px;
-    font-weight: bold;
-    color: #555;
-}
-
-textarea {
-    width: 100%;
-    height: 400px;
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
-    font-size: 0.95em;
-    line-height: 1.5;
+.editor {
+    height: 56vh;
+    min-height: 300px;
     resize: vertical;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
-    background-color: #fff;
-    color: #333;
 }
 
-textarea:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+.panel {
+    background: #fff;
+    border-radius: .5rem;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+    padding: 1rem;
 }
 
-button {
-    padding: 12px 25px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 1.1em;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.muted {
+    color: #6b7280;
 }
 
-button:hover {
-    background-color: #0056b3;
-    transform: translateY(-2px);
+.small {
+    font-size: .85rem;
 }
 
-button:active {
-    background-color: #004085;
-    transform: translateY(0);
+footer {
+    font-size: .85rem;
+    color: #6b7280;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .editor-container {
-        flex-direction: column;
-    }
-    .editor-panel {
-        min-width: unset; /* Remove min-width constraint for stacking */
-    }
-    textarea {
-        height: 300px; /* Slightly smaller height on mobile */
-    }
+.code-note {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+    font-size: .85rem;
+    color: #374151;
 }
+
+.single-line {
+    white-space: nowrap;
+}
+

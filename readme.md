@@ -169,3 +169,6 @@ Found a bug? Have a feature idea? Open an [issue](https://github.com/yourusernam
 - **Placeholders**: Replace `Your Name`, GitHub/LinkedIn links, and screenshot URLs with your details.
 
 Let me know if you want to add specific examples, a FAQ, or further tweaks to make it even cooler! 😎
+
+
+

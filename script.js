@@ -1,14 +1,429 @@
 /* ============================================================
- * HARDCORE RANDOM JSON GENERATOR
- * -----------------------------------------
- * - 12+ archetypes, each with nested child relations
- * - Recursive depth control
- * - Random field presence (sparse payloads)
- * - 8 different "broken" variants
- * - Never repeats the same archetype twice in a row
+ * JSON Cleaner & Formatter — Super Recover
+ * Battle-tested, monkey-proof, whitespace-safe.
+ * Full script — safe to replace entirely.
  * ============================================================ */
 
-// ---------- Low-level random helpers ----------
+// ---------- Bootstrap ----------
+document.getElementById('year').textContent = new Date().getFullYear();
+
+toastr.options = {
+  closeButton: true,
+  progressBar: true,
+  positionClass: 'toast-top-right',
+  preventDuplicates: true,
+  timeOut: 3500,
+};
+
+// ---------- DOM refs ----------
+const uncleanEl = document.getElementById('uncleanJson');
+const cleanEl = document.getElementById('cleanJson');
+const diagEl = document.getElementById('diagnostics');
+const parseBtn = document.getElementById('parseButton');
+const beautifyBtn = document.getElementById('beautifyButton');
+const minifyBtn = document.getElementById('minifyButton');
+const repairOnlyBtn = document.getElementById('repairOnlyButton');
+const copyInputBtn = document.getElementById('copyInput');
+const copyOutputBtn = document.getElementById('copyOutput');
+const downloadBtn = document.getElementById('downloadOutput');
+const sampleBtn = document.getElementById('sampleBtn');
+const clearInputBtn = document.getElementById('clearInput');
+const loader = document.getElementById('loader');
+
+// ============================================================
+// Diagnostics
+// ============================================================
+function logDiag(...args) {
+  const line = args
+    .map((a) => (typeof a === 'string' ? a : safeStringify(a)))
+    .join(' ');
+  const stamped = `[${new Date().toISOString()}] ${line}`;
+  diagEl.textContent = stamped + '\n' + diagEl.textContent;
+  console.log(stamped);
+}
+
+function safeStringify(v) {
+  try {
+    return JSON.stringify(v);
+  } catch {
+    return String(v);
+  }
+}
+
+// ============================================================
+// Utilities
+// ============================================================
+const MAX_INPUT = 5_000_000;
+
+function downloadText(filename, text) {
+  const blob = new Blob([text], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function isProbablyStringifiedJson(s) {
+  if (typeof s !== 'string') return false;
+  const t = s.trim();
+  return (
+    (t.startsWith('{') && t.endsWith('}')) ||
+    (t.startsWith('[') && t.endsWith(']'))
+  );
+}
+
+// ============================================================
+// LAYERED CLEANING PIPELINE
+// ============================================================
+function stripBOM(s) {
+  return s.replace(/^\uFEFF/, '').replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u206F]/g, '');
+}
+
+function stripControlChars(s) {
+  return s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+}
+
+function normalizeLineEndings(s) {
+  return s.replace(/\r\n?/g, '\n').replace(/[\u2028\u2029]/g, '\n');
+}
+
+function extractFirstJsonLike(text) {
+  const openers = {'{': '}', '[': ']'};
+  let start = -1;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === '{' || text[i] === '[') {
+      start = i;
+      break;
+    }
+  }
+  if (start < 0) return text;
+
+  const stack = [];
+  let inString = false;
+  let escape = false;
+
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+
+    if (inString) {
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escape = true;
+        continue;
+      }
+      if (ch === '"') {
+        inString = false;
+        continue;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (ch === '{' || ch === '[') {
+      stack.push(openers[ch]);
+    } else if (ch === '}' || ch === ']') {
+      if (stack.length === 0) break;
+      const expected = stack.pop();
+      if (ch !== expected) break;
+      if (stack.length === 0) return text.slice(start, i + 1);
+    }
+  }
+
+  const lastClose = Math.max(text.lastIndexOf('}'), text.lastIndexOf(']'));
+  return lastClose > start ? text.slice(start, lastClose + 1) : text.slice(start);
+}
+
+function removeTrailingCommas(text) {
+  let out = '';
+  let inString = false;
+  let escape = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+
+    if (inString) {
+      out += ch;
+      if (escape) {
+        escape = false;
+      } else if (ch === '\\') {
+        escape = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+      out += ch;
+      continue;
+    }
+
+    if (ch === ',') {
+      let j = i + 1;
+      while (j < text.length && /\s/.test(text[j])) j++;
+      if (text[j] === '}' || text[j] === ']') continue;
+    }
+
+    out += ch;
+  }
+  return out;
+}
+
+function singleToDoubleQuotes(text) {
+  let out = '';
+  let inDouble = false;
+  let inSingle = false;
+  let escape = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+
+    if (inDouble) {
+      out += ch;
+      if (escape) {
+        escape = false;
+      } else if (ch === '\\') {
+        escape = true;
+      } else if (ch === '"') {
+        inDouble = false;
+      }
+      continue;
+    }
+
+    if (inSingle) {
+      if (escape) {
+        out += ch;
+        escape = false;
+      } else if (ch === '\\') {
+        out += ch;
+        escape = true;
+      } else if (ch === "'") {
+        out += '"';
+        inSingle = false;
+      } else if (ch === '"') {
+        out += '\\"';
+      } else {
+        out += ch;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inDouble = true;
+      out += ch;
+      continue;
+    }
+    if (ch === "'") {
+      inSingle = true;
+      out += '"';
+      continue;
+    }
+
+    out += ch;
+  }
+  return out;
+}
+
+function quoteUnquotedKeys(text) {
+  let out = '';
+  let inString = false;
+  let escape = false;
+  let i = 0;
+
+  while (i < text.length) {
+    const ch = text[i];
+
+    if (inString) {
+      out += ch;
+      if (escape) {
+        escape = false;
+      } else if (ch === '\\') {
+        escape = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      i++;
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+      out += ch;
+      i++;
+      continue;
+    }
+
+    if (ch === '{' || ch === ',') {
+      out += ch;
+      i++;
+      while (i < text.length && /\s/.test(text[i])) {
+        out += text[i];
+        i++;
+      }
+      const m = /^([A-Za-z_$][A-Za-z0-9_$@\-]*)\s*:/.exec(text.slice(i));
+      if (m) {
+        out += '"' + m[1] + '":';
+        i += m[0].length;
+      }
+      continue;
+    }
+
+    out += ch;
+    i++;
+  }
+  return out;
+}
+
+function collapseBackslashes(text) {
+  return text.replace(/\\{2,}/g, (m) => '\\'.repeat(m.length % 2 === 0 ? m.length / 2 : Math.ceil(m.length / 2)));
+}
+
+function unescapeForwardSlash(text) {
+  return text.replace(/\\\//g, '/');
+}
+
+const repairSteps = [
+  stripBOM,
+  normalizeLineEndings,
+  stripControlChars,
+  extractFirstJsonLike,
+  unescapeForwardSlash,
+  collapseBackslashes,
+  removeTrailingCommas,
+  singleToDoubleQuotes,
+  quoteUnquotedKeys,
+];
+
+function deepUnwrapStrings(value, depth = 0) {
+  if (depth > 6) return value;
+
+  if (typeof value === 'string') {
+    const t = value.trim();
+    if (isProbablyStringifiedJson(t)) {
+      try {
+        const inner = robustCleanParse(t, {maxPasses: 3, maxUnwrap: 2, silent: true});
+        return deepUnwrapStrings(inner, depth + 1);
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((v) => deepUnwrapStrings(v, depth + 1));
+  }
+
+  if (value && typeof value === 'object') {
+    for (const k of Object.keys(value)) {
+      value[k] = deepUnwrapStrings(value[k], depth + 1);
+    }
+    return value;
+  }
+
+  return value;
+}
+
+function robustCleanParse(raw, options = {}) {
+  const {maxPasses = 8, maxUnwrap = 5, silent = false} = options;
+
+  if (typeof raw !== 'string') throw new Error('Input must be a string.');
+  const s = raw.trim();
+  if (s.length === 0) throw new Error('Empty input.');
+  if (s.length > MAX_INPUT) throw new Error(`Input too large (>${MAX_INPUT} bytes).`);
+
+  const trace = [];
+
+  try {
+    const parsed = JSON.parse(s);
+    if (!silent) logDiag('Fast-path JSON.parse succeeded.');
+    return deepUnwrapStrings(parsed);
+  } catch (e) {
+    trace.push(`fast-path: ${e.message}`);
+  }
+
+  for (let pass = 0; pass <= maxPasses; pass++) {
+    let candidate = s;
+
+    for (let i = 0; i <= pass && i < repairSteps.length; i++) {
+      candidate = repairSteps[i](candidate);
+    }
+
+    let temp = candidate;
+    let unwrapCount = 0;
+
+    while (unwrapCount <= maxUnwrap) {
+      try {
+        const parsed = JSON.parse(temp);
+        if (!silent) logDiag(`Parse succeeded on pass ${pass} (unwrap ${unwrapCount}).`);
+        return deepUnwrapStrings(parsed);
+      } catch (e) {
+        trace.push(`pass ${pass} unwrap ${unwrapCount}: ${e.message}`);
+
+        const m = temp.match(/^\s*"(.*)"\s*$/s);
+        if (m) {
+          const inner = m[1]
+            .replace(/\\"/g, '"')
+            .replace(/\\'/g, "'")
+            .replace(/\\\\/g, '\\');
+          if (inner !== temp) {
+            temp = inner;
+            unwrapCount++;
+            continue;
+          }
+        }
+
+        const extracted = extractFirstJsonLike(temp);
+        if (extracted !== temp) {
+          temp = extracted;
+          unwrapCount++;
+          continue;
+        }
+
+        break;
+      }
+    }
+  }
+
+  try {
+    let fallback = s;
+    fallback = stripBOM(fallback);
+    fallback = normalizeLineEndings(fallback);
+    fallback = stripControlChars(fallback);
+    fallback = extractFirstJsonLike(fallback);
+    fallback = unescapeForwardSlash(fallback);
+    fallback = collapseBackslashes(fallback);
+    fallback = removeTrailingCommas(fallback);
+    fallback = singleToDoubleQuotes(fallback);
+    fallback = quoteUnquotedKeys(fallback);
+    const parsed = JSON.parse(fallback);
+    if (!silent) logDiag('Fallback parse succeeded.');
+    return deepUnwrapStrings(parsed);
+  } catch (e) {
+    trace.push(`fallback: ${e.message}`);
+  }
+
+  if (!silent) logDiag('All repair attempts failed.', {trace});
+  throw new Error(
+    `Unable to parse JSON after all repair attempts. ${trace[trace.length - 1] || ''}`
+  );
+}
+
+// ============================================================
+// HARDCORE RANDOM JSON GENERATOR
+// ============================================================
 const rnd = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const rndF = (min, max, dec = 2) => +(Math.random() * (max - min) + min).toFixed(dec);
 const pick = (arr) => arr[rnd(0, arr.length - 1)];
@@ -26,7 +441,6 @@ const isoDate = (daysBack = 365) => {
 };
 const isoDateShort = (daysBack = 365) => isoDate(daysBack).split('T')[0];
 
-// ---------- Realistic data pools ----------
 const FIRST_NAMES = ['Zoe', 'Ava', 'Mia', 'Leo', 'Noah', 'Ivy', 'Eli', 'Aria', 'Kai', 'Luca',
   'Sofia', 'Mason', 'Ruby', 'Ezra', 'Nora', 'Owen', 'Layla', 'Caleb'];
 const LAST_NAMES = ['Gannam', 'Chen', 'Patel', 'Nguyen', 'Khan', 'Smith', 'Garcia', 'Brown',
@@ -50,7 +464,6 @@ const LOREM = ['Lorem ipsum dolor sit amet', 'Consectetur adipiscing elit',
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'PKR', 'AED', 'JPY', 'INR'];
 const STATUSES = ['active', 'pending', 'shipped', 'delivered', 'cancelled', 'refunded'];
 
-// ---------- Reusable leaf generators ----------
 function genName() {
   return `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`;
 }
@@ -80,7 +493,6 @@ function genMoney() {
   return rndF(5, 5000, 2);
 }
 
-// ---------- Nested entity generators ----------
 function genReview(depth) {
   return {
     id: uuid(),
@@ -239,16 +651,8 @@ function genInvoice(depth = 1) {
     issuedAt: isoDateShort(90),
     dueAt: isoDateShort(-30),
     currency: pick(CURRENCIES),
-    from: {
-      company: pick(COMPANIES),
-      address: genAddress(),
-      taxId: `TAX-${rnd(100000, 999999)}`,
-    },
-    to: {
-      name: genName(),
-      email: genEmail(),
-      address: genAddress(),
-    },
+    from: {company: pick(COMPANIES), address: genAddress(), taxId: `TAX-${rnd(100000, 999999)}`},
+    to: {name: genName(), email: genEmail(), address: genAddress()},
     items,
     subtotal: total,
     tax: +(total * 0.1).toFixed(2),
@@ -256,10 +660,7 @@ function genInvoice(depth = 1) {
     status: pick(['draft', 'sent', 'paid', 'overdue']),
     ...(depth > 0 && maybe(0.5) ? {
       payments: Array.from({length: rnd(0, 3)}, () => ({
-        id: uuid(),
-        amount: genMoney(),
-        method: pick(['card', 'bank_transfer', 'paypal']),
-        paidAt: isoDate(90),
+        id: uuid(), amount: genMoney(), method: pick(['card', 'bank_transfer', 'paypal']), paidAt: isoDate(90),
       }))
     } : {}),
   };
@@ -273,11 +674,7 @@ function genEvent(depth = 1) {
     startsAt: isoDate(-30),
     endsAt: isoDate(-30),
     location: genAddress(),
-    organizer: {
-      name: genName(),
-      email: genEmail(),
-      ...(maybe(0.5) ? {phone: genPhone()} : {}),
-    },
+    organizer: {name: genName(), email: genEmail(), ...(maybe(0.5) ? {phone: genPhone()} : {})},
     ...(depth > 0 && maybe(0.8) ? {
       attendees: Array.from({length: rnd(1, 6)}, () => ({
         id: uuid(),
@@ -289,10 +686,7 @@ function genEvent(depth = 1) {
     } : {}),
     ...(depth > 0 && maybe(0.5) ? {
       sessions: Array.from({length: rnd(1, 3)}, () => ({
-        title: pick(LOREM),
-        speaker: genName(),
-        startTime: isoDate(-30),
-        durationMinutes: rnd(30, 120),
+        title: pick(LOREM), speaker: genName(), startTime: isoDate(-30), durationMinutes: rnd(30, 120),
       }))
     } : {}),
     tags: pickMany(TAGS, rnd(0, 3)),
@@ -313,15 +707,12 @@ function genEmployee(depth = 1) {
     manager: maybe(0.7) ? {id: uuid(), name: genName()} : null,
     ...(depth > 0 && maybe(0.6) ? {
       directReports: Array.from({length: rnd(0, 4)}, () => ({
-        employeeId: `EMP-${rnd(1000, 9999)}`,
-        name: genName(),
-        title: pick(TITLES),
+        employeeId: `EMP-${rnd(1000, 9999)}`, name: genName(), title: pick(TITLES),
       }))
     } : {}),
     ...(depth > 0 && maybe(0.4) ? {
       skills: pickMany(
-        ['JavaScript', 'Python', 'Go', 'Rust', 'SQL', 'Kubernetes', 'AWS', 'React'],
-        rnd(1, 5),
+        ['JavaScript', 'Python', 'Go', 'Rust', 'SQL', 'Kubernetes', 'AWS', 'React'], rnd(1, 5),
       )
     } : {}),
   };
@@ -334,13 +725,10 @@ function genAnalytics() {
     total: rnd(100, 1_000_000),
     change: rndF(-50, 200, 2),
     breakdown: Array.from({length: rnd(3, 7)}, () => ({
-      label: pick(CITIES),
-      value: rnd(10, 10_000),
-      share: rndF(0, 1, 4),
+      label: pick(CITIES), value: rnd(10, 10_000), share: rndF(0, 1, 4),
     })),
     timeline: Array.from({length: rnd(7, 30)}, (_, i) => ({
-      date: isoDateShort(30 - i),
-      value: rnd(50, 5000),
+      date: isoDateShort(30 - i), value: rnd(50, 5000),
     })),
   };
 }
@@ -349,10 +737,7 @@ function genGeoFeature() {
   return {
     type: 'Feature',
     id: uuid(),
-    geometry: {
-      type: 'Point',
-      coordinates: [rndF(-180, 180, 6), rndF(-90, 90, 6)],
-    },
+    geometry: {type: 'Point', coordinates: [rndF(-180, 180, 6), rndF(-90, 90, 6)]},
     properties: {
       name: pick(CITIES),
       country: pick(COUNTRIES),
@@ -407,30 +792,17 @@ function genBlogPost(depth = 1) {
     title: pick(LOREM),
     excerpt: pick(LOREM),
     body: `${pick(LOREM)}. ${pick(LOREM)}. ${pick(LOREM)}.`,
-    author: {
-      id: uuid(),
-      name: genName(),
-      avatar: `https://avatars.${pick(DOMAINS)}/${uuid()}`,
-    },
+    author: {id: uuid(), name: genName(), avatar: `https://avatars.${pick(DOMAINS)}/${uuid()}`},
     tags: pickMany(TAGS, rnd(1, 4)),
     published: maybe(0.8),
     publishedAt: isoDate(365),
-    stats: {
-      views: rnd(0, 50_000),
-      likes: rnd(0, 2000),
-      comments: rnd(0, 200),
-    },
+    stats: {views: rnd(0, 50_000), likes: rnd(0, 2000), comments: rnd(0, 200)},
     ...(depth > 0 && maybe(0.7) ? {
       comments: Array.from({length: rnd(0, 5)}, () => ({
-        id: uuid(),
-        author: genName(),
-        body: pick(LOREM),
-        createdAt: isoDate(90),
+        id: uuid(), author: genName(), body: pick(LOREM), createdAt: isoDate(90),
         ...(maybe(0.4) ? {
           replies: Array.from({length: rnd(0, 3)}, () => ({
-            author: genName(),
-            body: pick(LOREM),
-            createdAt: isoDate(60),
+            author: genName(), body: pick(LOREM), createdAt: isoDate(60),
           }))
         } : {}),
       }))
@@ -438,7 +810,6 @@ function genBlogPost(depth = 1) {
   };
 }
 
-// ---------- Archetype registry ----------
 const ARCHETYPES = [
   {name: 'user', gen: () => genUser(2)},
   {name: 'users', gen: () => Array.from({length: rnd(2, 5)}, () => genUser(1))},
@@ -463,7 +834,6 @@ const ARCHETYPES = [
   },
 ];
 
-// ---------- Track last archetype to avoid repeats ----------
 let __lastArchetypeIndex = -1;
 
 function pickArchetype() {
@@ -476,67 +846,229 @@ function pickArchetype() {
   return ARCHETYPES[idx];
 }
 
-// ---------- Broken variants ----------
 const BROKEN_VARIANTS = [
-  // 0: stringified JSON (double-encoded)
   (json) => JSON.stringify(JSON.stringify(json)),
-
-  // 1: single-quoted keys + values
   (json) => {
     const p = JSON.stringify(json, null, 2);
     return p
       .replace(/"([A-Za-z_][A-Za-z0-9_]*)":/g, "'$1':")
       .replace(/: "([^"]*)"/g, ": '$1'");
   },
-
-  // 2: trailing commas sprinkled
   (json) => {
     const p = JSON.stringify(json, null, 2);
     return p
       .replace(/([}\]"])(\n\s*[}\]])/g, '$1,$2')
       .replace(/,\s*\n(\s*})/g, ',\n$1');
   },
-
-  // 3: wrapped in prose
   (json) => `Here is the data you asked for:\n\n${JSON.stringify(json, null, 2)}\n\n— End of response —`,
-
-  // 4: double-escaped (backslashes everywhere)
   (json) => JSON.stringify(JSON.stringify(json)).replace(/\\\\"/g, '\\\\\\\\"'),
-
-  // 5: unquoted keys + single quotes + trailing comma
   (json) => {
     const p = JSON.stringify(json, null, 2)
       .replace(/"([A-Za-z_][A-Za-z0-9_]*)":/g, '$1:')
       .replace(/: "([^"]*)"/g, ": '$1'");
     return p.replace(/}(\s*\n\s*[}\]])/g, '},$1');
   },
-
-  // 6: JSON wrapped inside a JSON string field
   (json) => JSON.stringify({payload: JSON.stringify(json), meta: {ok: true}}),
-
-  // 7: clean, already valid (control case)
   (json) => JSON.stringify(json, null, 2),
 ];
 
 let __lastVariantIndex = -1;
 
 function pickVariant() {
-  // Occasionally return clean (variant 7) but never twice in a row
   let idx;
   do {
-    // Bias toward broken variants (7 out of 8 are broken)
     idx = Math.random() < 0.85 ? rnd(0, 6) : 7;
   } while (idx === __lastVariantIndex);
   __lastVariantIndex = idx;
   return BROKEN_VARIANTS[idx];
 }
 
-// ---------- Public API ----------
 function randomSample() {
   const archetype = pickArchetype();
   const payload = archetype.gen();
   const broken = pickVariant()(payload);
-  // Log what was generated (helps you see variety while testing)
   console.debug(`[sample] archetype=${archetype.name} variant=${__lastVariantIndex}`);
   return broken;
 }
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function showLoader() {
+  loader.classList.remove('hidden');
+  loader.classList.add('flex');
+  [parseBtn, beautifyBtn, minifyBtn, repairOnlyBtn].forEach((b) => (b.disabled = true));
+}
+
+function hideLoader() {
+  loader.classList.add('hidden');
+  loader.classList.remove('flex');
+  [parseBtn, beautifyBtn, minifyBtn, repairOnlyBtn].forEach((b) => (b.disabled = false));
+}
+
+function formatJson(value, space = 2) {
+  return JSON.stringify(value, null, space);
+}
+
+function minifyJson(value) {
+  return JSON.stringify(value);
+}
+
+function assertRoundTrip(text) {
+  try {
+    JSON.parse(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ============================================================
+// EVENT HANDLERS
+// ============================================================
+parseBtn.addEventListener('click', async () => {
+  diagEl.textContent = '';
+  cleanEl.value = '';
+  const raw = uncleanEl.value.trim();
+  if (!raw) return toastr.info('Paste JSON first.');
+
+  showLoader();
+  const start = performance.now();
+  try {
+    const parsed = robustCleanParse(raw);
+    const formatted = formatJson(parsed);
+    if (!assertRoundTrip(formatted)) throw new Error('Output failed round-trip validation.');
+    cleanEl.value = formatted;
+    const t = ((performance.now() - start) / 1000).toFixed(3);
+    toastr.success(`Cleaned & formatted in ${t}s ✅`);
+    logDiag('Output length:', formatted.length, 'chars');
+  } catch (err) {
+    toastr.error(`Parse failed: ${err.message}`);
+    logDiag('Error:', err.message);
+  } finally {
+    hideLoader();
+  }
+});
+
+beautifyBtn.addEventListener('click', async () => {
+  diagEl.textContent = '';
+  const raw = uncleanEl.value.trim();
+  if (!raw) return toastr.info('No input.');
+
+  showLoader();
+  const start = performance.now();
+  try {
+    const parsed = robustCleanParse(raw);
+    const formatted = formatJson(parsed);
+    if (!assertRoundTrip(formatted)) throw new Error('Output failed round-trip validation.');
+    cleanEl.value = formatted;
+    const t = ((performance.now() - start) / 1000).toFixed(3);
+    toastr.success(`Beautified in ${t}s`);
+  } catch (err) {
+    toastr.error(`Beautify failed: ${err.message}`);
+    logDiag('Error:', err.message);
+  } finally {
+    hideLoader();
+  }
+});
+
+minifyBtn.addEventListener('click', async () => {
+  diagEl.textContent = '';
+  const raw = uncleanEl.value.trim();
+  if (!raw) return toastr.info('No input.');
+
+  showLoader();
+  const start = performance.now();
+  try {
+    const parsed = robustCleanParse(raw);
+    const minified = minifyJson(parsed);
+    if (!assertRoundTrip(minified)) throw new Error('Minified output failed round-trip validation.');
+    cleanEl.value = minified;
+    const t = ((performance.now() - start) / 1000).toFixed(3);
+    toastr.success(`Minified in ${t}s`);
+  } catch (err) {
+    toastr.error(`Minify failed: ${err.message}`);
+    logDiag('Error:', err.message);
+  } finally {
+    hideLoader();
+  }
+});
+
+repairOnlyBtn.addEventListener('click', async () => {
+  diagEl.textContent = '';
+  const raw = uncleanEl.value.trim();
+  if (!raw) return toastr.info('No input.');
+
+  showLoader();
+  const start = performance.now();
+  try {
+    const parsed = robustCleanParse(raw);
+    const compact = JSON.stringify(parsed);
+    if (!assertRoundTrip(compact)) throw new Error('Repaired output failed round-trip validation.');
+    cleanEl.value = compact;
+    const t = ((performance.now() - start) / 1000).toFixed(3);
+    toastr.success(`Repaired in ${t}s`);
+  } catch (err) {
+    toastr.error(`Repair failed: ${err.message}`);
+    logDiag('Error:', err.message);
+  } finally {
+    hideLoader();
+  }
+});
+
+copyInputBtn.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(uncleanEl.value);
+    toastr.success('Input copied');
+  } catch (e) {
+    toastr.error('Copy failed');
+    logDiag('Copy error:', e);
+  }
+});
+
+copyOutputBtn.addEventListener('click', async () => {
+  if (!cleanEl.value) return toastr.info('No output to copy');
+  try {
+    await navigator.clipboard.writeText(cleanEl.value);
+    toastr.success('Output copied');
+  } catch (e) {
+    toastr.error('Copy failed');
+    logDiag('Copy error:', e);
+  }
+});
+
+downloadBtn.addEventListener('click', () => {
+  if (!cleanEl.value) return toastr.info('No output to download');
+  downloadText('cleaned.json', cleanEl.value);
+  toastr.success('Downloaded cleaned.json');
+});
+
+// ---------- SAMPLE BUTTON ----------
+sampleBtn.addEventListener('click', () => {
+  try {
+    const sample = randomSample();
+    uncleanEl.value = sample;
+    cleanEl.value = '';
+    diagEl.textContent = '';
+    toastr.info('Random sample inserted');
+  } catch (err) {
+    console.error('[sample] failed:', err);
+    toastr.error('Sample generation failed — see console');
+  }
+});
+
+clearInputBtn.addEventListener('click', () => {
+  uncleanEl.value = '';
+  cleanEl.value = '';
+  diagEl.textContent = '';
+  toastr.info('Cleared');
+});
+
+// Expose for console testing / monkey testing
+window.__jsonTool = {
+  robustCleanParse,
+  randomSample,
+  deepUnwrapStrings,
+};
+
+logDiag('Tool ready. Use window.__jsonTool for console testing.');

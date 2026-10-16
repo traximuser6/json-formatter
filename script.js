@@ -1,328 +1,542 @@
-document.getElementById('year').textContent = new Date().getFullYear();
+/* ============================================================
+ * HARDCORE RANDOM JSON GENERATOR
+ * -----------------------------------------
+ * - 12+ archetypes, each with nested child relations
+ * - Recursive depth control
+ * - Random field presence (sparse payloads)
+ * - 8 different "broken" variants
+ * - Never repeats the same archetype twice in a row
+ * ============================================================ */
 
-toastr.options = {
-  closeButton: true,
-  progressBar: true,
-  positionClass: "toast-top-right",
-  preventDuplicates: true,
-  timeOut: 4000
+// ---------- Low-level random helpers ----------
+const rnd = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const rndF = (min, max, dec = 2) => +(Math.random() * (max - min) + min).toFixed(dec);
+const pick = (arr) => arr[rnd(0, arr.length - 1)];
+const pickMany = (arr, n) => [...arr].sort(() => Math.random() - 0.5).slice(0, n);
+const maybe = (prob = 0.5) => Math.random() < prob;
+const uuid = () =>
+  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+const isoDate = (daysBack = 365) => {
+  const d = new Date(Date.now() - rnd(0, daysBack) * 86_400_000);
+  return d.toISOString();
 };
+const isoDateShort = (daysBack = 365) => isoDate(daysBack).split('T')[0];
 
-const uncleanEl = document.getElementById('uncleanJson');
-const cleanEl = document.getElementById('cleanJson');
-const diagEl = document.getElementById('diagnostics');
-const parseBtn = document.getElementById('parseButton');
-const beautifyBtn = document.getElementById('beautifyButton');
-const minifyBtn = document.getElementById('minifyButton');
-const copyInputBtn = document.getElementById('copyInput');
-const copyOutputBtn = document.getElementById('copyOutput');
-const downloadBtn = document.getElementById('downloadOutput');
-const sampleBtn = document.getElementById('sampleBtn');
-const clearInputBtn = document.getElementById('clearInput');
-const loader = document.getElementById('loader');
+// ---------- Realistic data pools ----------
+const FIRST_NAMES = ['Zoe', 'Ava', 'Mia', 'Leo', 'Noah', 'Ivy', 'Eli', 'Aria', 'Kai', 'Luca',
+  'Sofia', 'Mason', 'Ruby', 'Ezra', 'Nora', 'Owen', 'Layla', 'Caleb'];
+const LAST_NAMES = ['Gannam', 'Chen', 'Patel', 'Nguyen', 'Khan', 'Smith', 'Garcia', 'Brown',
+  'Okafor', 'Rossi', 'Haddad', 'Yamamoto', 'Kowalski', 'Silva'];
+const CITIES = ['Karachi', 'Lahore', 'Islamabad', 'Dubai', 'London', 'New York',
+  'Tokyo', 'Berlin', 'Toronto', 'Sydney', 'São Paulo', 'Mumbai'];
+const COUNTRIES = ['PK', 'US', 'GB', 'DE', 'JP', 'AE', 'CA', 'AU', 'BR', 'IN'];
+const STREETS = ['Main St', 'Oak Ave', 'Park Rd', 'Elm St', 'Maple Dr', 'Baker St'];
+const COMPANIES = ['West Capital Lending', 'Nova Corp', 'Acme Inc', 'Blue Peak', 'Vertex',
+  'Quantum Labs', 'Aurora Systems', 'Bright Path'];
+const DOMAINS = ['example.com', 'acme.io', 'nova.co', 'lending.com', 'test.dev', 'demo.app'];
+const TITLES = ['Branch Manager', 'Senior Engineer', 'Product Lead', 'Analyst',
+  'Director', 'CTO', 'Designer', 'Data Scientist'];
+const DEPARTMENTS = ['Engineering', 'Sales', 'Marketing', 'Finance', 'Ops', 'Support'];
+const CATEGORIES = ['Electronics', 'Clothing', 'Books', 'Home', 'Sports', 'Beauty', 'Toys'];
+const BRANDS = ['Apple', 'Samsung', 'Sony', 'Nike', 'Adidas', 'LG', 'Dell', 'Bose'];
+const TAGS = ['new', 'sale', 'featured', 'limited', 'premium', 'eco', 'bestseller'];
+const LOREM = ['Lorem ipsum dolor sit amet', 'Consectetur adipiscing elit',
+  'Sed do eiusmod tempor incididunt', 'Ut labore et dolore magna aliqua',
+  'Ut enim ad minim veniam'];
+const CURRENCIES = ['USD', 'EUR', 'GBP', 'PKR', 'AED', 'JPY', 'INR'];
+const STATUSES = ['active', 'pending', 'shipped', 'delivered', 'cancelled', 'refunded'];
 
-function logDiag(...args) {
-  console.log(...args);
-  const message = args.map(a => typeof a === 'string' ? a : JSON.stringify(a, null, 2)).join(' ');
-  diagEl.textContent = `${new Date().toISOString()} — ${message}\n` + diagEl.textContent;
+// ---------- Reusable leaf generators ----------
+function genName() {
+  return `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`;
 }
 
-function downloadText(filename, text) {
-  const blob = new Blob([text], {type: 'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+function genEmail() {
+  const f = pick(FIRST_NAMES).toLowerCase();
+  const l = pick(LAST_NAMES).toLowerCase();
+  return `${f}.${l}${maybe(0.3) ? rnd(1, 99) : ''}@${pick(DOMAINS)}`;
 }
 
-function robustCleanParse(rawString, opts = {maxUnwrap: 6, maxRepairPasses: 6}) {
-  let s = (rawString || '').trim();
-  if (s.length > 5_000_000) throw new Error('Input too large (>5MB).');
+function genPhone() {
+  return `(${rnd(100, 999)}) ${rnd(100, 999)}-${rnd(1000, 9999)}`;
+}
 
-  function extractFirstJsonLike(text) {
-    const m = text.match(/([\[\{][\s\S]*[\}\]])/);
-    return m ? m[1] : text;
-  }
+function genAddress() {
+  return {
+    line1: `${rnd(1, 9999)} ${pick(STREETS)}`,
+    city: pick(CITIES),
+    country: pick(COUNTRIES),
+    postalCode: String(rnd(10000, 99999)),
+    ...(maybe(0.4) ? {line2: `Apt ${rnd(1, 500)}`} : {}),
+    ...(maybe(0.3) ? {state: pick(['CA', 'NY', 'TX', 'FL', 'IL'])} : {}),
+  };
+}
 
-  function removeControlChars(text) {
-    return text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
-  }
+function genMoney() {
+  return rndF(5, 5000, 2);
+}
 
-  function removeTrailingCommas(text) {
-    return text.replace(/,\s*(?=[}\]])/g, '');
-  }
+// ---------- Nested entity generators ----------
+function genReview(depth) {
+  return {
+    id: uuid(),
+    rating: rnd(1, 5),
+    title: pick(LOREM),
+    body: pick(LOREM) + '. ' + pick(LOREM) + '.',
+    author: genName(),
+    verified: maybe(0.7),
+    createdAt: isoDate(180),
+    ...(depth > 0 && maybe(0.3) ? {replies: Array.from({length: rnd(1, 3)}, () => genReview(0))} : {}),
+  };
+}
 
-  function singleToDoubleQuotes(text) {
-    return text.replace(/'([^'\r\n]*?)'(?=\s*[:,\}|\]])/g, '"$1"')
-      .replace(/:\s*'([^'\r\n]*?)'/g, ': "$1"')
-      .replace(/'([A-Za-z0-9_\-@.]+)'\s*:/g, '"$1":');
-  }
+function genProduct(depth = 2) {
+  const price = genMoney();
+  const cost = +(price * rndF(0.4, 0.75, 2)).toFixed(2);
+  return {
+    id: uuid(),
+    sku: `SKU-${rnd(10000, 99999)}`,
+    name: `${pick(BRANDS)} ${pick(CATEGORIES)} Item ${rnd(1, 1000)}`,
+    description: pick(LOREM),
+    price,
+    cost,
+    currency: pick(CURRENCIES),
+    category: pick(CATEGORIES),
+    brand: pick(BRANDS),
+    tags: pickMany(TAGS, rnd(0, 3)),
+    inStock: maybe(0.8),
+    stock: rnd(0, 500),
+    ...(maybe(0.6) ? {
+      images: Array.from({length: rnd(1, 4)}, (_, i) => ({
+        id: i + 1,
+        url: `https://cdn.${pick(DOMAINS)}/img/${uuid()}.jpg`,
+        alt: pick(LOREM),
+      }))
+    } : {}),
+    ...(depth > 0 && maybe(0.7) ? {reviews: Array.from({length: rnd(0, 4)}, () => genReview(1))} : {}),
+    ...(depth > 0 && maybe(0.4) ? {
+      variants: Array.from({length: rnd(1, 3)}, () => ({
+        sku: `VAR-${rnd(1000, 9999)}`,
+        color: pick(['red', 'blue', 'black', 'white', 'green']),
+        size: pick(['S', 'M', 'L', 'XL']),
+        priceDelta: rndF(-10, 20, 2),
+      }))
+    } : {}),
+  };
+}
 
-  function quoteUnquotedKeys(text) {
-    return text.replace(/([{\s,])([A-Za-z0-9_\-$@]+)\s*:/g, '$1"$2":');
-  }
+function genShipment() {
+  return {
+    id: uuid(),
+    carrier: pick(['UPS', 'FedEx', 'DHL', 'USPS']),
+    trackingNumber: `${pick(['1Z', 'FDX', 'DHL'])}${rnd(100000, 999999)}`,
+    status: pick(['label_created', 'in_transit', 'out_for_delivery', 'delivered']),
+    shippedAt: isoDate(30),
+    estimatedDelivery: isoDateShort(-10),
+    events: Array.from({length: rnd(1, 5)}, () => ({
+      timestamp: isoDate(15),
+      location: `${pick(CITIES)}, ${pick(COUNTRIES)}`,
+      status: pick(['picked_up', 'in_transit', 'arrived', 'out_for_delivery']),
+    })),
+  };
+}
 
-  function collapseBackslashes(text) {
-    return text.replace(/\\\\+/g, m => m.length % 2 === 0 ? '\\\\' : '\\');
-  }
+function genOrderItem(depth = 1) {
+  const qty = rnd(1, 5);
+  const unitPrice = genMoney();
+  return {
+    id: uuid(),
+    productId: uuid(),
+    quantity: qty,
+    unitPrice,
+    discount: maybe(0.3) ? rndF(0, unitPrice * 0.3, 2) : 0,
+    lineTotal: +(unitPrice * qty).toFixed(2),
+    ...(depth > 0 && maybe(0.5) ? {product: genProduct(0)} : {}),
+  };
+}
 
-  function unescapeForwardSlash(text) {
-    return text.replace(/\\\//g, '/');
-  }
+function genOrder(depth = 2) {
+  const items = Array.from({length: rnd(1, 5)}, () => genOrderItem(depth > 0 ? 1 : 0));
+  const subtotal = +items.reduce((s, i) => s + i.lineTotal, 0).toFixed(2);
+  const tax = +(subtotal * 0.08).toFixed(2);
+  const shipping = maybe(0.5) ? rndF(0, 25, 2) : 0;
+  return {
+    id: uuid(),
+    orderNumber: `ORD-${new Date().getFullYear()}-${rnd(1000, 9999)}`,
+    customer: {
+      id: uuid(),
+      name: genName(),
+      email: genEmail(),
+      ...(maybe(0.6) ? {phone: genPhone()} : {}),
+      ...(maybe(0.5) ? {address: genAddress()} : {}),
+    },
+    items,
+    subtotal,
+    tax,
+    shipping,
+    total: +(subtotal + tax + shipping).toFixed(2),
+    currency: pick(CURRENCIES),
+    status: pick(STATUSES),
+    paymentMethod: pick(['card', 'paypal', 'apple_pay', 'bank_transfer', 'crypto']),
+    createdAt: isoDate(180),
+    ...(depth > 0 && maybe(0.6) ? {shipment: genShipment()} : {}),
+    ...(depth > 0 && maybe(0.4) ? {notes: pick(LOREM)} : {}),
+  };
+}
 
-  function normalizeWhitespace(text) {
-    return text.replace(/\t/g, '  ');
-  }
-
-  const repairPasses = [
-    s => s,
-    extractFirstJsonLike,
-    removeControlChars,
-    unescapeForwardSlash,
-    collapseBackslashes,
-    removeTrailingCommas,
-    singleToDoubleQuotes,
-    quoteUnquotedKeys,
-    normalizeWhitespace
-  ];
-
-  let parsed = null;
-  let lastErr = null;
-  let attempts = [];
-
-  for (let pass = 0; pass < opts.maxRepairPasses; pass++) {
-    try {
-      let candidate = s;
-      for (let i = 0; i <= pass; i++) {
-        candidate = repairPasses[i % repairPasses.length](candidate);
-      }
-      attempts.push({pass, snippet: candidate.slice(0, 300)});
-
-      let unwrapCount = 0;
-      let temp = candidate;
-      while (unwrapCount < opts.maxUnwrap) {
-        try {
-          parsed = JSON.parse(temp);
-          logDiag(`Parse succeeded on pass ${pass} after ${unwrapCount} unwraps.`);
-          break;
-        } catch (err) {
-          lastErr = err;
-          const m = temp.match(/^\s*["']([\s\S]*)["']\s*$/);
-          if (m) {
-            temp = m[1].replace(/\\"/g, '"').replace(/\\'/g, "'").replace(/\\\\+/g, m => m.length % 2 === 0 ? '\\\\' : '\\');
-            unwrapCount++;
-            continue;
-          }
-          const extracted = extractFirstJsonLike(temp);
-          if (extracted !== temp) {
-            temp = extracted;
-            unwrapCount++;
-            continue;
-          }
-          break;
+function genUser(depth = 2) {
+  return {
+    id: uuid(),
+    username: `${pick(FIRST_NAMES).toLowerCase()}${rnd(1, 999)}`,
+    firstName: pick(FIRST_NAMES),
+    lastName: pick(LAST_NAMES),
+    email: genEmail(),
+    phone: genPhone(),
+    role: pick(['admin', 'manager', 'user', 'viewer']),
+    isActive: maybe(0.8),
+    profile: {
+      avatar: `https://avatars.${pick(DOMAINS)}/${uuid()}`,
+      bio: pick(LOREM),
+      ...(maybe(0.6) ? {
+        social: {
+          twitter: `@${pick(FIRST_NAMES).toLowerCase()}${rnd(1, 99)}`,
+          ...(maybe(0.5) ? {github: `${pick(FIRST_NAMES).toLowerCase()}${rnd(1, 999)}`} : {}),
         }
+      } : {}),
+    },
+    address: genAddress(),
+    ...(depth > 0 && maybe(0.7) ? {orders: Array.from({length: rnd(0, 3)}, () => genOrder(1))} : {}),
+    ...(depth > 0 && maybe(0.5) ? {
+      preferences: {
+        language: pick(['en', 'es', 'fr', 'de', 'ur']),
+        timezone: pick(['UTC', 'America/New_York', 'Asia/Karachi', 'Europe/London']),
+        notifications: {
+          email: maybe(0.9),
+          sms: maybe(0.5),
+          push: maybe(0.7),
+        },
       }
-      if (parsed) break;
-    } catch (err) {
-      lastErr = err;
-    }
-  }
+    } : {}),
+    createdAt: isoDate(730),
+  };
+}
 
-  if (!parsed) {
-    try {
-      let candidate = s.replace(/\\n/g, '\\n').replace(/\\t/g, '\\t');
-      candidate = extractFirstJsonLike(candidate);
-      candidate = removeTrailingCommas(candidate);
-      candidate = collapseBackslashes(candidate);
-      parsed = JSON.parse(candidate);
-      logDiag('Fallback parse succeeded.');
-    } catch (err) {
-      lastErr = err;
-    }
-  }
+function genInvoice(depth = 1) {
+  const items = Array.from({length: rnd(1, 4)}, () => ({
+    description: pick(LOREM),
+    quantity: rnd(1, 10),
+    unitPrice: genMoney(),
+    total: 0,
+  }));
+  items.forEach((it) => (it.total = +(it.quantity * it.unitPrice).toFixed(2)));
+  const total = +items.reduce((s, i) => s + i.total, 0).toFixed(2);
+  return {
+    invoiceNumber: `INV-${new Date().getFullYear()}-${rnd(1000, 9999)}`,
+    issuedAt: isoDateShort(90),
+    dueAt: isoDateShort(-30),
+    currency: pick(CURRENCIES),
+    from: {
+      company: pick(COMPANIES),
+      address: genAddress(),
+      taxId: `TAX-${rnd(100000, 999999)}`,
+    },
+    to: {
+      name: genName(),
+      email: genEmail(),
+      address: genAddress(),
+    },
+    items,
+    subtotal: total,
+    tax: +(total * 0.1).toFixed(2),
+    total: +(total * 1.1).toFixed(2),
+    status: pick(['draft', 'sent', 'paid', 'overdue']),
+    ...(depth > 0 && maybe(0.5) ? {
+      payments: Array.from({length: rnd(0, 3)}, () => ({
+        id: uuid(),
+        amount: genMoney(),
+        method: pick(['card', 'bank_transfer', 'paypal']),
+        paidAt: isoDate(90),
+      }))
+    } : {}),
+  };
+}
 
-  if (!parsed) {
-    logDiag('All attempts failed.', {attempts});
-    throw new Error(`Unable to parse: ${lastErr?.message || 'unknown'}`);
-  }
+function genEvent(depth = 1) {
+  return {
+    id: uuid(),
+    title: pick(LOREM),
+    description: pick(LOREM),
+    startsAt: isoDate(-30),
+    endsAt: isoDate(-30),
+    location: genAddress(),
+    organizer: {
+      name: genName(),
+      email: genEmail(),
+      ...(maybe(0.5) ? {phone: genPhone()} : {}),
+    },
+    ...(depth > 0 && maybe(0.8) ? {
+      attendees: Array.from({length: rnd(1, 6)}, () => ({
+        id: uuid(),
+        name: genName(),
+        email: genEmail(),
+        rsvp: pick(['yes', 'no', 'maybe', 'pending']),
+        ...(maybe(0.3) ? {dietary: pick(['vegetarian', 'vegan', 'gluten_free', 'halal'])} : {}),
+      }))
+    } : {}),
+    ...(depth > 0 && maybe(0.5) ? {
+      sessions: Array.from({length: rnd(1, 3)}, () => ({
+        title: pick(LOREM),
+        speaker: genName(),
+        startTime: isoDate(-30),
+        durationMinutes: rnd(30, 120),
+      }))
+    } : {}),
+    tags: pickMany(TAGS, rnd(0, 3)),
+    published: maybe(0.7),
+  };
+}
 
-  function recursivelyParseStrings(obj) {
-    if (typeof obj === 'string') {
-      const trimmed = obj.trim();
-      if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
-        try {
-          return robustCleanParse(trimmed, {maxUnwrap: 3, maxRepairPasses: 3});
-        } catch (e) {
-          return obj;
-        }
+function genEmployee(depth = 1) {
+  return {
+    employeeId: `EMP-${rnd(1000, 9999)}`,
+    name: genName(),
+    email: genEmail(),
+    phone: genPhone(),
+    title: pick(TITLES),
+    department: pick(DEPARTMENTS),
+    salary: rnd(40_000, 200_000),
+    hireDate: isoDateShort(2000),
+    manager: maybe(0.7) ? {id: uuid(), name: genName()} : null,
+    ...(depth > 0 && maybe(0.6) ? {
+      directReports: Array.from({length: rnd(0, 4)}, () => ({
+        employeeId: `EMP-${rnd(1000, 9999)}`,
+        name: genName(),
+        title: pick(TITLES),
+      }))
+    } : {}),
+    ...(depth > 0 && maybe(0.4) ? {
+      skills: pickMany(
+        ['JavaScript', 'Python', 'Go', 'Rust', 'SQL', 'Kubernetes', 'AWS', 'React'],
+        rnd(1, 5),
+      )
+    } : {}),
+  };
+}
+
+function genAnalytics() {
+  return {
+    metric: pick(['pageviews', 'signups', 'revenue', 'sessions', 'conversions']),
+    period: pick(['1d', '7d', '30d', '90d']),
+    total: rnd(100, 1_000_000),
+    change: rndF(-50, 200, 2),
+    breakdown: Array.from({length: rnd(3, 7)}, () => ({
+      label: pick(CITIES),
+      value: rnd(10, 10_000),
+      share: rndF(0, 1, 4),
+    })),
+    timeline: Array.from({length: rnd(7, 30)}, (_, i) => ({
+      date: isoDateShort(30 - i),
+      value: rnd(50, 5000),
+    })),
+  };
+}
+
+function genGeoFeature() {
+  return {
+    type: 'Feature',
+    id: uuid(),
+    geometry: {
+      type: 'Point',
+      coordinates: [rndF(-180, 180, 6), rndF(-90, 90, 6)],
+    },
+    properties: {
+      name: pick(CITIES),
+      country: pick(COUNTRIES),
+      population: rnd(10_000, 20_000_000),
+      ...(maybe(0.4) ? {timezone: pick(['UTC', 'Asia/Karachi', 'America/New_York'])} : {}),
+    },
+  };
+}
+
+function genGeoJSON() {
+  return {
+    type: 'FeatureCollection',
+    features: Array.from({length: rnd(2, 5)}, genGeoFeature),
+  };
+}
+
+function genConfig() {
+  return {
+    appName: pick(COMPANIES),
+    version: `${rnd(1, 9)}.${rnd(0, 20)}.${rnd(0, 50)}`,
+    environment: pick(['dev', 'staging', 'prod']),
+    features: Object.fromEntries(
+      pickMany(['auth', 'payments', 'chat', 'search', 'analytics', 'notifications'], rnd(2, 5))
+        .map((f) => [f, maybe(0.8)]),
+    ),
+    database: {
+      host: `db.${pick(DOMAINS)}`,
+      port: pick([5432, 3306, 27017]),
+      ssl: maybe(0.9),
+      pool: {min: rnd(1, 5), max: rnd(10, 50)},
+    },
+    ...(maybe(0.6) ? {
+      logging: {
+        level: pick(['debug', 'info', 'warn', 'error']),
+        outputs: pickMany(['stdout', 'file', 'syslog'], rnd(1, 3)),
       }
-      return obj;
-    } else if (Array.isArray(obj)) {
-      return obj.map(recursivelyParseStrings);
-    } else if (obj && typeof obj === 'object') {
-      for (const k in obj) obj[k] = recursivelyParseStrings(obj[k]);
-      return obj;
-    }
-    return obj;
-  }
-
-  try {
-    parsed = recursivelyParseStrings(parsed);
-  } catch (e) {
-    logDiag('Warning in recursive parse:', e.message);
-  }
-
-  return parsed;
+    } : {}),
+    ...(maybe(0.4) ? {
+      integrations: Array.from({length: rnd(1, 4)}, () => ({
+        name: pick(['stripe', 'twilio', 'sendgrid', 'slack', 'github']),
+        enabled: maybe(0.8),
+        apiKey: `sk_${uuid().replace(/-/g, '')}`,
+      }))
+    } : {}),
+  };
 }
 
-function formatJson(obj, space = 2) {
-  return JSON.stringify(obj, null, space);
+function genBlogPost(depth = 1) {
+  return {
+    id: uuid(),
+    slug: pick(LOREM).toLowerCase().replace(/[^a-z]+/g, '-'),
+    title: pick(LOREM),
+    excerpt: pick(LOREM),
+    body: `${pick(LOREM)}. ${pick(LOREM)}. ${pick(LOREM)}.`,
+    author: {
+      id: uuid(),
+      name: genName(),
+      avatar: `https://avatars.${pick(DOMAINS)}/${uuid()}`,
+    },
+    tags: pickMany(TAGS, rnd(1, 4)),
+    published: maybe(0.8),
+    publishedAt: isoDate(365),
+    stats: {
+      views: rnd(0, 50_000),
+      likes: rnd(0, 2000),
+      comments: rnd(0, 200),
+    },
+    ...(depth > 0 && maybe(0.7) ? {
+      comments: Array.from({length: rnd(0, 5)}, () => ({
+        id: uuid(),
+        author: genName(),
+        body: pick(LOREM),
+        createdAt: isoDate(90),
+        ...(maybe(0.4) ? {
+          replies: Array.from({length: rnd(0, 3)}, () => ({
+            author: genName(),
+            body: pick(LOREM),
+            createdAt: isoDate(60),
+          }))
+        } : {}),
+      }))
+    } : {}),
+  };
 }
 
-function minifyJson(obj) {
-  return JSON.stringify(obj);
+// ---------- Archetype registry ----------
+const ARCHETYPES = [
+  {name: 'user', gen: () => genUser(2)},
+  {name: 'users', gen: () => Array.from({length: rnd(2, 5)}, () => genUser(1))},
+  {name: 'order', gen: () => genOrder(2)},
+  {name: 'orders', gen: () => Array.from({length: rnd(2, 4)}, () => genOrder(1))},
+  {name: 'product', gen: () => genProduct(2)},
+  {name: 'products', gen: () => Array.from({length: rnd(3, 6)}, () => genProduct(1))},
+  {name: 'invoice', gen: () => genInvoice(1)},
+  {name: 'event', gen: () => genEvent(1)},
+  {name: 'employees', gen: () => Array.from({length: rnd(3, 8)}, () => genEmployee(1))},
+  {name: 'analytics', gen: () => genAnalytics()},
+  {name: 'geojson', gen: () => genGeoJSON()},
+  {name: 'config', gen: () => genConfig()},
+  {name: 'blogPost', gen: () => genBlogPost(1)},
+  {
+    name: 'mixedBundle', gen: () => ({
+      user: genUser(1),
+      recentOrders: Array.from({length: rnd(1, 3)}, () => genOrder(1)),
+      recommended: Array.from({length: rnd(2, 4)}, () => genProduct(0)),
+      config: genConfig(),
+    })
+  },
+];
+
+// ---------- Track last archetype to avoid repeats ----------
+let __lastArchetypeIndex = -1;
+
+function pickArchetype() {
+  if (ARCHETYPES.length === 1) return ARCHETYPES[0];
+  let idx;
+  do {
+    idx = rnd(0, ARCHETYPES.length - 1);
+  } while (idx === __lastArchetypeIndex);
+  __lastArchetypeIndex = idx;
+  return ARCHETYPES[idx];
 }
 
-function showLoader() {
-  loader.classList.remove('hidden');
-  parseBtn.disabled = true;
-  beautifyBtn.disabled = true;
-  minifyBtn.disabled = true;
+// ---------- Broken variants ----------
+const BROKEN_VARIANTS = [
+  // 0: stringified JSON (double-encoded)
+  (json) => JSON.stringify(JSON.stringify(json)),
+
+  // 1: single-quoted keys + values
+  (json) => {
+    const p = JSON.stringify(json, null, 2);
+    return p
+      .replace(/"([A-Za-z_][A-Za-z0-9_]*)":/g, "'$1':")
+      .replace(/: "([^"]*)"/g, ": '$1'");
+  },
+
+  // 2: trailing commas sprinkled
+  (json) => {
+    const p = JSON.stringify(json, null, 2);
+    return p
+      .replace(/([}\]"])(\n\s*[}\]])/g, '$1,$2')
+      .replace(/,\s*\n(\s*})/g, ',\n$1');
+  },
+
+  // 3: wrapped in prose
+  (json) => `Here is the data you asked for:\n\n${JSON.stringify(json, null, 2)}\n\n— End of response —`,
+
+  // 4: double-escaped (backslashes everywhere)
+  (json) => JSON.stringify(JSON.stringify(json)).replace(/\\\\"/g, '\\\\\\\\"'),
+
+  // 5: unquoted keys + single quotes + trailing comma
+  (json) => {
+    const p = JSON.stringify(json, null, 2)
+      .replace(/"([A-Za-z_][A-Za-z0-9_]*)":/g, '$1:')
+      .replace(/: "([^"]*)"/g, ": '$1'");
+    return p.replace(/}(\s*\n\s*[}\]])/g, '},$1');
+  },
+
+  // 6: JSON wrapped inside a JSON string field
+  (json) => JSON.stringify({payload: JSON.stringify(json), meta: {ok: true}}),
+
+  // 7: clean, already valid (control case)
+  (json) => JSON.stringify(json, null, 2),
+];
+
+let __lastVariantIndex = -1;
+
+function pickVariant() {
+  // Occasionally return clean (variant 7) but never twice in a row
+  let idx;
+  do {
+    // Bias toward broken variants (7 out of 8 are broken)
+    idx = Math.random() < 0.85 ? rnd(0, 6) : 7;
+  } while (idx === __lastVariantIndex);
+  __lastVariantIndex = idx;
+  return BROKEN_VARIANTS[idx];
 }
 
-function hideLoader() {
-  loader.classList.add('hidden');
-  parseBtn.disabled = false;
-  beautifyBtn.disabled = false;
-  minifyBtn.disabled = false;
+// ---------- Public API ----------
+function randomSample() {
+  const archetype = pickArchetype();
+  const payload = archetype.gen();
+  const broken = pickVariant()(payload);
+  // Log what was generated (helps you see variety while testing)
+  console.debug(`[sample] archetype=${archetype.name} variant=${__lastVariantIndex}`);
+  return broken;
 }
-
-parseBtn.addEventListener('click', async () => {
-  diagEl.textContent = '';
-  cleanEl.value = '';
-  const raw = uncleanEl.value.trim();
-  if (!raw) {
-    toastr.info('Paste JSON first.');
-    return;
-  }
-  showLoader();
-  const start = performance.now();
-  try {
-    const parsed = robustCleanParse(raw);
-    cleanEl.value = formatJson(parsed);
-    const time = ((performance.now() - start) / 1000).toFixed(3);
-    toastr.success(`Cleaned JSON successfully in ${time}s ✅`);
-    logDiag('Output length:', cleanEl.value.length, 'chars');
-  } catch (err) {
-    toastr.error(`Parsing failed: ${err.message}`);
-    logDiag('Error:', err.message);
-  } finally {
-    hideLoader();
-  }
-});
-
-beautifyBtn.addEventListener('click', async () => {
-  diagEl.textContent = '';
-  const raw = uncleanEl.value.trim();
-  if (!raw) {
-    toastr.info('No input.');
-    return;
-  }
-  showLoader();
-  const start = performance.now();
-  try {
-    const p = JSON.parse(raw);
-    cleanEl.value = formatJson(p);
-    const time = ((performance.now() - start) / 1000).toFixed(3);
-    toastr.success(`Beautified JSON in ${time}s`);
-  } catch (e) {
-    try {
-      const parsed = robustCleanParse(raw);
-      cleanEl.value = formatJson(parsed);
-      const time = ((performance.now() - start) / 1000).toFixed(3);
-      toastr.success(`Beautified JSON after repairs in ${time}s`);
-    } catch (err) {
-      toastr.error(`Beautify failed: ${err.message}`);
-      logDiag('Error:', err.message);
-    }
-  } finally {
-    hideLoader();
-  }
-});
-
-minifyBtn.addEventListener('click', async () => {
-  diagEl.textContent = '';
-  const raw = uncleanEl.value.trim();
-  if (!raw) {
-    toastr.info('No input.');
-    return;
-  }
-  showLoader();
-  const start = performance.now();
-  try {
-    const p = JSON.parse(raw);
-    cleanEl.value = minifyJson(p);
-    const time = ((performance.now() - start) / 1000).toFixed(3);
-    toastr.success(`Minified JSON in ${time}s`);
-  } catch (e) {
-    try {
-      const parsed = robustCleanParse(raw);
-      cleanEl.value = minifyJson(parsed);
-      const time = ((performance.now() - start) / 1000).toFixed(3);
-      toastr.success(`Minified JSON after repairs in ${time}s`);
-    } catch (err) {
-      toastr.error(`Minify failed: ${err.message}`);
-      logDiag('Error:', err.message);
-    }
-  } finally {
-    hideLoader();
-  }
-});
-
-copyInputBtn.addEventListener('click', async () => {
-  try {
-    await navigator.clipboard.writeText(uncleanEl.value);
-    toastr.success('Input copied to clipboard');
-  } catch (e) {
-    toastr.error('Copy failed');
-    logDiag('Copy error:', e);
-  }
-});
-
-copyOutputBtn.addEventListener('click', async () => {
-  if (!cleanEl.value) {
-    toastr.info('No output to copy');
-    return;
-  }
-  try {
-    await navigator.clipboard.writeText(cleanEl.value);
-    toastr.success('Output copied to clipboard');
-  } catch (e) {
-    toastr.error('Copy failed');
-    logDiag('Copy error:', e);
-  }
-});
-
-downloadBtn.addEventListener('click', () => {
-  if (!cleanEl.value) {
-    toastr.info('No output to download');
-    return;
-  }
-  downloadText('cleaned.json', cleanEl.value);
-  toastr.success('Downloaded cleaned.json');
-});
-
-sampleBtn.addEventListener('click', () => {
-  const sample = `["{\\\"NMLS\\\":2046912,\\\"Role\\\":2,\\\"Email\\\":\\\"zgannam@westcapitallending.com\\\",\\\"Phone\\\":\\\"(949) 404-5573\\\",\\\"UserId\\\":1636,\\\"IsActive\\\":1,\\\"JobTitle\\\":\\\"Branch Manager\\\",\\\"LastName\\\":\\\"Gannam\\\",\\\"NickName\\\":null,\\\"TeamName\\\":\\\"\\\",\\\"FirstName\\\":\\\"Zoe\\\",\\\"Agent\\\":null}"]`;
-  uncleanEl.value = sample;
-  toastr.info('Sample JSON inserted');
-});
-
-clearInputBtn.addEventListener('click', () => {
-  uncleanEl.value = '';
-  toastr.info('Input cleared');
-});
-
-logDiag('Tool ready.');

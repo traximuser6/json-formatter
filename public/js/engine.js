@@ -17,7 +17,10 @@ function extractFirstJsonLike(text) {
   const openers = { '{': '}', '[': ']' };
   let start = -1;
   for (let i = 0; i < text.length; i++) {
-    if (text[i] === '{' || text[i] === '[') { start = i; break; }
+    if (text[i] === '{' || text[i] === '[') {
+      start = i;
+      break;
+    }
   }
   if (start < 0) return text;
 
@@ -28,12 +31,24 @@ function extractFirstJsonLike(text) {
   for (let i = start; i < text.length; i++) {
     const ch = text[i];
     if (inString) {
-      if (escape) { escape = false; continue; }
-      if (ch === '\\') { escape = true; continue; }
-      if (ch === '"') { inString = false; continue; }
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escape = true;
+        continue;
+      }
+      if (ch === '"') {
+        inString = false;
+        continue;
+      }
       continue;
     }
-    if (ch === '"') { inString = true; continue; }
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
     if (ch === '{' || ch === '[') stack.push(openers[ch]);
     else if (ch === '}' || ch === ']') {
       if (stack.length === 0) break;
@@ -58,7 +73,11 @@ function removeTrailingCommas(text) {
       else if (ch === '"') inString = false;
       continue;
     }
-    if (ch === '"') { inString = true; out += ch; continue; }
+    if (ch === '"') {
+      inString = true;
+      out += ch;
+      continue;
+    }
     if (ch === ',') {
       let j = i + 1;
       while (j < text.length && /\s/.test(text[j])) j++;
@@ -83,15 +102,29 @@ function singleToDoubleQuotes(text) {
       continue;
     }
     if (inSingle) {
-      if (escape) { out += ch; escape = false; }
-      else if (ch === '\\') { out += ch; escape = true; }
-      else if (ch === "'") { out += '"'; inSingle = false; }
-      else if (ch === '"') out += '\\"';
+      if (escape) {
+        out += ch;
+        escape = false;
+      } else if (ch === '\\') {
+        out += ch;
+        escape = true;
+      } else if (ch === "'") {
+        out += '"';
+        inSingle = false;
+      } else if (ch === '"') out += '\\"';
       else out += ch;
       continue;
     }
-    if (ch === '"') { inDouble = true; out += ch; continue; }
-    if (ch === "'") { inSingle = true; out += '"'; continue; }
+    if (ch === '"') {
+      inDouble = true;
+      out += ch;
+      continue;
+    }
+    if (ch === "'") {
+      inSingle = true;
+      out += '"';
+      continue;
+    }
     out += ch;
   }
   return out;
@@ -111,13 +144,24 @@ function quoteUnquotedKeys(text) {
       i++;
       continue;
     }
-    if (ch === '"') { inString = true; out += ch; i++; continue; }
+    if (ch === '"') {
+      inString = true;
+      out += ch;
+      i++;
+      continue;
+    }
     if (ch === '{' || ch === ',') {
       out += ch;
       i++;
-      while (i < text.length && /\s/.test(text[i])) { out += text[i]; i++; }
+      while (i < text.length && /\s/.test(text[i])) {
+        out += text[i];
+        i++;
+      }
       const m = /^([A-Za-z_$][A-Za-z0-9_$@\-]*)\s*:/.exec(text.slice(i));
-      if (m) { out += '"' + m[1] + '":'; i += m[0].length; }
+      if (m) {
+        out += '"' + m[1] + '":';
+        i += m[0].length;
+      }
       continue;
     }
     out += ch;
@@ -149,10 +193,7 @@ const repairSteps = [
 function isProbablyStringifiedJson(s) {
   if (typeof s !== 'string') return false;
   const t = s.trim();
-  return (
-    (t.startsWith('{') && t.endsWith('}')) ||
-    (t.startsWith('[') && t.endsWith(']'))
-  );
+  return (t.startsWith('{') && t.endsWith('}')) || (t.startsWith('[') && t.endsWith(']'));
 }
 
 export function deepUnwrapStrings(value, depth = 0) {
@@ -163,7 +204,9 @@ export function deepUnwrapStrings(value, depth = 0) {
       try {
         const inner = robustCleanParse(t, { maxPasses: 3, maxUnwrap: 2, silent: true });
         return deepUnwrapStrings(inner, depth + 1);
-      } catch { return value; }
+      } catch {
+        return value;
+      }
     }
     return value;
   }
@@ -202,14 +245,19 @@ export function robustCleanParse(raw, options = {}) {
       } catch {
         const m = temp.match(/^\s*"(.*)"\s*$/s);
         if (m) {
-          const inner = m[1]
-            .replace(/\\"/g, '"')
-            .replace(/\\'/g, "'")
-            .replace(/\\\\/g, '\\');
-          if (inner !== temp) { temp = inner; unwrapCount++; continue; }
+          const inner = m[1].replace(/\\"/g, '"').replace(/\\'/g, "'").replace(/\\\\/g, '\\');
+          if (inner !== temp) {
+            temp = inner;
+            unwrapCount++;
+            continue;
+          }
         }
         const extracted = extractFirstJsonLike(temp);
-        if (extracted !== temp) { temp = extracted; unwrapCount++; continue; }
+        if (extracted !== temp) {
+          temp = extracted;
+          unwrapCount++;
+          continue;
+        }
         break;
       }
     }

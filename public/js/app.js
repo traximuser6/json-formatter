@@ -2,8 +2,8 @@
  * app.js — UI wiring (ES module)
  * ============================================================ */
 
-import {robustCleanParse} from './engine.js';
-import {randomSample} from './sample.js';
+import { robustCleanParse } from './engine.js';
+import { randomSample } from './sample.js';
 
 // ---------- DOM ----------
 const uncleanEl = document.getElementById('uncleanJson');
@@ -50,7 +50,7 @@ function hideLoader() {
 }
 
 function downloadText(filename, text) {
-  const blob = new Blob([text], {type: 'application/json'});
+  const blob = new Blob([text], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -94,8 +94,12 @@ async function runAction(label, transform) {
   }
 }
 
-parseBtn.addEventListener('click', () => runAction('Cleaned & formatted', (p) => JSON.stringify(p, null, 2)));
-beautifyBtn.addEventListener('click', () => runAction('Beautified', (p) => JSON.stringify(p, null, 2)));
+parseBtn.addEventListener('click', () =>
+  runAction('Cleaned & formatted', (p) => JSON.stringify(p, null, 2)),
+);
+beautifyBtn.addEventListener('click', () =>
+  runAction('Beautified', (p) => JSON.stringify(p, null, 2)),
+);
 minifyBtn.addEventListener('click', () => runAction('Minified', (p) => JSON.stringify(p)));
 repairBtn.addEventListener('click', () => runAction('Repaired', (p) => JSON.stringify(p)));
 
@@ -146,6 +150,6 @@ clearBtn.addEventListener('click', () => {
 });
 
 // Expose for console testing
-window.__jsonTool = {robustCleanParse, randomSample};
+window.__jsonTool = { robustCleanParse, randomSample };
 
 logDiag('Tool ready. Use window.__jsonTool in console.');

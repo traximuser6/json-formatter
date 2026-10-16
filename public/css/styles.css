@@ -7,7 +7,9 @@
   height: 65vh;
   min-height: 350px;
   resize: vertical;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 /* Loader: absolute positioning (Tailwind lacks this exact combo) */

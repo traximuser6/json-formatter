@@ -72,7 +72,7 @@ function normalizeLineEndings(s) {
 }
 
 function extractFirstJsonLike(text) {
-  const openers = {'{': '}', '[': ']'};
+  const openers = { '{': '}', '[': ']' };
   let start = -1;
   for (let i = 0; i < text.length; i++) {
     if (text[i] === '{' || text[i] === '[') {
@@ -265,7 +265,7 @@ function deepUnwrapStrings(value, depth = 0) {
     const t = value.trim();
     if (isProbablyStringifiedJson(t)) {
       try {
-        const inner = robustCleanParse(t, {maxPasses: 3, maxUnwrap: 2, silent: true});
+        const inner = robustCleanParse(t, { maxPasses: 3, maxUnwrap: 2, silent: true });
         return deepUnwrapStrings(inner, depth + 1);
       } catch {
         return value;
@@ -282,7 +282,7 @@ function deepUnwrapStrings(value, depth = 0) {
 }
 
 function robustCleanParse(raw, options = {}) {
-  const {maxPasses = 8, maxUnwrap = 5, silent = true} = options;
+  const { maxPasses = 8, maxUnwrap = 5, silent = true } = options;
   if (typeof raw !== 'string') throw new Error('Input must be a string.');
   const s = raw.trim();
   if (s.length === 0) throw new Error('Empty input.');
@@ -351,8 +351,7 @@ function main() {
     process.exit(1);
   }
 
-  const log = args.silent ? () => {
-  } : (...a) => console.log(...a);
+  const log = args.silent ? () => {} : (...a) => console.log(...a);
 
   log(`📖 Reading: ${inPath}`);
   const raw = fs.readFileSync(inPath, 'utf8');

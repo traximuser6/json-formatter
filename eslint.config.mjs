@@ -50,13 +50,6 @@ export default [
     },
   },
   {
-    ignores: [
-      'node_modules/**',
-      'dist/**',
-      'build/**',
-      'tmp/**',
-      'coverage/**',
-      '.idea/**',
-    ],
+    ignores: ['node_modules/**', 'dist/**', 'build/**', 'tmp/**', 'coverage/**', '.idea/**'],
   },
 ];

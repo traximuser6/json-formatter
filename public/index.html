@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>JSON Cleaner &amp; Formatter — Super Recover</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml"/>
+
+  <!-- Tailwind CDN + theme -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- jQuery (for Toastr) -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <!-- Toastr -->
+  <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"
+  />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+  <!-- Minimal custom CSS (scrollbars + editor height only) -->
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+
+<body
+    class="min-h-screen flex flex-col bg-slate-100 font-sans text-slate-800 antialiased"
+>
+<!-- HEADER -->
+<header
+    class="bg-gradient-to-r from-sky-600 to-indigo-600 text-white py-6 shadow"
+>
+  <div class="max-w-6xl mx-auto px-4">
+    <h1
+        class="text-2xl md:text-3xl font-semibold text-center tracking-tight"
+    >
+      JSON Cleaner &amp; Formatter — Super Recover
+    </h1>
+    <p class="text-center text-sm mt-1 text-white/90">
+      Best-effort cleaning for badly formatted, escaped, or double-encoded
+      JSON.
+    </p>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="flex-1 max-w-6xl w-full mx-auto px-4 py-8">
+  <!-- GRID -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- INPUT PANEL -->
+    <section
+        class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6 relative"
+    >
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <label for="uncleanJson" class="font-medium text-slate-800"
+          >Unclean JSON Input</label
+          >
+          <p class="text-sm text-slate-500 mt-1">
+            Paste raw / broken JSON (double-encoded, stray slashes, trailing
+            commas).
+          </p>
+        </div>
+        <div class="flex gap-2 shrink-0">
+          <button
+              id="sampleBtn"
+              class="px-4 py-2 rounded-md text-sm font-medium bg-white border border-slate-300 text-slate-700 shadow-sm hover:bg-slate-50 hover:border-sky-500 hover:shadow transition-all"
+          >
+            Insert Sample
+          </button>
+          <button
+              id="clearInput"
+              class="px-4 py-2 rounded-md text-sm font-medium bg-white border border-slate-300 text-slate-700 shadow-sm hover:bg-slate-50 hover:border-sky-500 hover:shadow transition-all"
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <textarea
+          id="uncleanJson"
+          class="editor mt-4 w-full font-mono text-sm p-4 border border-slate-300 rounded-lg bg-white focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 focus:outline-none"
+          placeholder="Paste raw JSON here..."
+          spellcheck="false"
+      ></textarea>
+
+      <div class="mt-4 flex flex-wrap gap-2">
+        <button
+            id="parseButton"
+            class="px-4 py-2 rounded-md text-sm font-medium text-white shadow-sm bg-gradient-to-r from-sky-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 hover:shadow-md hover:-translate-y-px active:translate-y-0 transition-all"
+        >
+          Clean &amp; Format
+        </button>
+        <button
+            id="beautifyButton"
+            class="px-4 py-2 rounded-md text-sm font-medium bg-white border border-slate-300 text-slate-700 shadow-sm hover:bg-slate-50 hover:border-sky-500 hover:shadow transition-all"
+        >
+          Beautify
+        </button>
+        <button
+            id="minifyButton"
+            class="px-4 py-2 rounded-md text-sm font-medium bg-white border border-slate-300 text-slate-700 shadow-sm hover:bg-slate-50 hover:border-sky-500 hover:shadow transition-all"
+        >
+          Minify
+        </button>
+        <button
+            id="repairOnlyButton"
+            class="px-4 py-2 rounded-md text-sm font-medium bg-white border border-slate-300 text-slate-700 shadow-sm hover:bg-slate-50 hover:border-sky-500 hover:shadow transition-all"
+        >
+          Repair Only
+        </button>
+        <button
+            id="copyInput"
+            class="px-4 py-2 rounded-md text-sm font-medium bg-white border border-slate-300 text-slate-700 shadow-sm hover:bg-slate-50 hover:border-sky-500 hover:shadow transition-all"
+        >
+          Copy Input
+        </button>
+      </div>
+
+      <!-- LOADER -->
+      <div
+          id="loader"
+          class="loader hidden flex-col items-center gap-2 text-sky-600 bg-white/80 backdrop-blur-sm rounded-lg px-4 py-3 shadow-lg"
+      >
+        <svg
+            class="animate-spin h-6 w-6"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+        >
+        <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+        ></circle>
+        <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v8h8a8 8 0 01-8 8 8 8 0 01-8-8z"
+        ></path>
+        </svg>
+        <span class="text-sm font-medium">Processing…</span>
+      </div>
+    </section>
+
+    <!-- OUTPUT PANEL -->
+    <section
+        class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6"
+    >
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <label for="cleanJson" class="font-medium text-slate-800"
+          >Cleaned &amp; Formatted JSON</label
+          >
+          <p class="text-sm text-slate-500 mt-1">
+            Result appears here (read-only).
+          </p>
+        </div>
+        <div class="flex gap-2 shrink-0">
+          <button
+              id="copyOutput"
+              class="px-4 py-2 rounded-md text-sm font-medium bg-white border border-slate-300 text-slate-700 shadow-sm hover:bg-slate-50 hover:border-sky-500 hover:shadow transition-all"
+          >
+            Copy
+          </button>
+          <button
+              id="downloadOutput"
+              class="px-4 py-2 rounded-md text-sm font-medium bg-white border border-slate-300 text-slate-700 shadow-sm hover:bg-slate-50 hover:border-sky-500 hover:shadow transition-all"
+          >
+            Download
+          </button>
+        </div>
+      </div>
+
+      <textarea
+          id="cleanJson"
+          class="editor mt-4 w-full font-mono text-sm p-4 border border-slate-300 rounded-lg bg-slate-50 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 focus:outline-none"
+          readonly
+          spellcheck="false"
+      ></textarea>
+
+      <div class="mt-4">
+        <div class="text-sm text-slate-500 mb-2">Diagnostics</div>
+        <pre
+            id="diagnostics"
+            class="p-3 bg-slate-50 rounded-lg h-32 overflow-auto border border-slate-200 text-xs font-mono text-slate-700 whitespace-pre-wrap"
+        ></pre>
+      </div>
+    </section>
+  </div>
+
+  <!-- INFO ROW -->
+  <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <div class="font-medium text-slate-800">How it repairs</div>
+      <ul class="mt-2 list-disc ml-5 text-sm text-slate-600 space-y-1">
+        <li>
+          Tries
+          <code
+              class="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded"
+          >JSON.parse</code
+          >
+          first
+        </li>
+        <li>Strips BOM, control chars, stray bytes</li>
+        <li>Recovers from double / triple escaping</li>
+        <li>Fixes trailing commas, single quotes, unquoted keys</li>
+        <li>Extracts first JSON-like substring</li>
+        <li>Recursively parses nested stringified JSON</li>
+      </ul>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <div class="font-medium text-slate-800">Notes &amp; limits</div>
+      <p class="text-sm text-slate-600 mt-2">
+        Best-effort fixer. Extremely ambiguous JSON may require manual
+        fixes. Max input:
+        <strong class="text-slate-800">5 MB</strong>.
+      </p>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm p-6 overflow-auto">
+      <div class="font-medium text-slate-800">Example</div>
+      <p class="text-xs text-slate-600 mt-2 font-mono break-all leading-relaxed">
+        ["{\"NMLS\":2046912,\"Role\":2,...}"]
+      </p>
+    </div>
+  </div>
+
+  <footer class="mt-8 text-center text-sm text-slate-500">
+    &copy; <span id="year"></span> JSON Formatter Tool — Super Recover
+  </footer>
+</main>
+
+<!-- Scripts (ES modules) -->
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

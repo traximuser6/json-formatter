@@ -3,6 +3,8 @@
  * Run: node --test test/
  */
 
+
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -16,7 +18,7 @@ const path = require('node:path');
 // For this project, we duplicate the pipeline in a testable module.
 // See: ./_engine.js (created below).
 
-const { robustCleanParse } = require('./_engine.js');
+const { robustCleanParse } = require('../src/engine.js');
 
 test('parses valid JSON fast-path', () => {
   const out = robustCleanParse('{"a":1}');
@@ -59,7 +61,7 @@ test('handles nested stringified values', () => {
 });
 
 test('parses fixture and matches expected', () => {
-  const messy = fs.readFileSync(path.join(__dirname, 'fixtures/messy.json'), 'utf8');
+  const messy = fs.readFileSync(path.join(__dirname, 'fixtures/messy.txt'), 'utf8');
   const expected = JSON.parse(
     fs.readFileSync(path.join(__dirname, 'fixtures/expected.json'), 'utf8'),
   );

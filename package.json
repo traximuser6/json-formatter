@@ -24,15 +24,13 @@
     "url": "https://github.com/traximuser6/json-cleaner/issues"
   },
   "type": "commonjs",
-  "main": "main.js",
+  "main": "src/cli.js",
   "bin": {
-    "json-cleaner": "main.js"
+    "json-cleaner": "src/cli.js"
   },
   "files": [
-    "main.js",
-    "script.js",
-    "index.html",
-    "style.css",
+    "src/",
+    "public/",
     "README.md",
     "LICENSE"
   ],
@@ -40,17 +38,18 @@
     "node": ">=12.0.0"
   },
   "scripts": {
-    "start": "node main.js",
-    "clean": "node main.js",
-    "clean:sample": "node main.js --input=samples/messy.json --output=samples/clean.json",
-    "clean:minify": "node main.js --minify",
-    "web:serve": "npx serve .",
+    "start": "node src/cli.js",
+    "clean": "node src/cli.js",
+    "clean:sample": "node src/cli.js --input=samples/messy.txt --output=samples/clean.json",
+    "clean:minify": "node src/cli.js --minify",
+    "web:serve": "npx serve public",
+    "web:dev": "npx live-server public --port=4500 --open=index.html",
     "test": "node --test test/",
     "test:watch": "node --test --watch test/",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"**/*.{js,json,md,html,css}\"",
-    "format:check": "prettier --check \"**/*.{js,json,md,html,css}\"",
+    "format": "prettier --write \"**/*.{js,mjs,json,md,html,css}\"",
+    "format:check": "prettier --check \"**/*.{js,mjs,json,md,html,css}\"",
     "verify": "npm run lint && npm run format:check && npm run test",
     "prepublishOnly": "npm run verify"
   },

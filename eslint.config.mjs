@@ -3,12 +3,12 @@ import js from '@eslint/js';
 export default [
   js.configs.recommended,
   {
-    files: ['**/*.js'],
+    files: ['**/*.js', '**/*.mjs'],
     languageOptions: {
       ecmaVersion: 2022,
-      sourceType: 'commonjs',
+      sourceType: 'module',
       globals: {
-        // Node.js
+        // Node
         require: 'readonly',
         module: 'readonly',
         exports: 'readonly',
@@ -24,7 +24,7 @@ export default [
         URL: 'readonly',
         Blob: 'readonly',
 
-        // Browser (for script.js)
+        // Browser
         window: 'readonly',
         document: 'readonly',
         navigator: 'readonly',
@@ -32,7 +32,7 @@ export default [
         localStorage: 'readonly',
         EventSource: 'readonly',
 
-        // Global libs (loaded via CDN)
+        // CDN libs
         toastr: 'readonly',
         $: 'readonly',
         jQuery: 'readonly',
@@ -47,10 +47,16 @@ export default [
       eqeqeq: ['error', 'always', { null: 'ignore' }],
       curly: ['error', 'multi-line'],
       'no-throw-literal': 'error',
-      'no-return-await': 'warn',
     },
   },
   {
-    ignores: ['node_modules/**', 'dist/**', 'build/**', 'tmp/**', 'coverage/**', '.idea/**'],
+    ignores: [
+      'node_modules/**',
+      'dist/**',
+      'build/**',
+      'tmp/**',
+      'coverage/**',
+      '.idea/**',
+    ],
   },
 ];

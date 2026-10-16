@@ -11,6 +11,8 @@
  *   node main.js --help
  */
 
+const { robustCleanParse } = require('./engine.js');
+
 const fs = require('fs');
 const path = require('path');
 
@@ -60,14 +62,17 @@ Examples:
 function stripBOM(s) {
   return s.replace(/^\uFEFF/, '').replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u206F]/g, '');
 }
+
 function stripControlChars(s) {
   return s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 }
+
 function normalizeLineEndings(s) {
   return s.replace(/\r\n?/g, '\n').replace(/[\u2028\u2029]/g, '\n');
 }
+
 function extractFirstJsonLike(text) {
-  const openers = { '{': '}', '[': ']' };
+  const openers = {'{': '}', '[': ']'};
   let start = -1;
   for (let i = 0; i < text.length; i++) {
     if (text[i] === '{' || text[i] === '[') {
@@ -113,6 +118,7 @@ function extractFirstJsonLike(text) {
   const lastClose = Math.max(text.lastIndexOf('}'), text.lastIndexOf(']'));
   return lastClose > start ? text.slice(start, lastClose + 1) : text.slice(start);
 }
+
 function removeTrailingCommas(text) {
   let out = '';
   let inString = false;
@@ -140,6 +146,7 @@ function removeTrailingCommas(text) {
   }
   return out;
 }
+
 function singleToDoubleQuotes(text) {
   let out = '';
   let inDouble = false;
@@ -182,6 +189,7 @@ function singleToDoubleQuotes(text) {
   }
   return out;
 }
+
 function quoteUnquotedKeys(text) {
   let out = '';
   let inString = false;
@@ -222,11 +230,13 @@ function quoteUnquotedKeys(text) {
   }
   return out;
 }
+
 function collapseBackslashes(text) {
   return text.replace(/\\{2,}/g, (m) =>
     '\\'.repeat(m.length % 2 === 0 ? m.length / 2 : Math.ceil(m.length / 2)),
   );
 }
+
 function unescapeForwardSlash(text) {
   return text.replace(/\\\//g, '/');
 }
@@ -255,7 +265,7 @@ function deepUnwrapStrings(value, depth = 0) {
     const t = value.trim();
     if (isProbablyStringifiedJson(t)) {
       try {
-        const inner = robustCleanParse(t, { maxPasses: 3, maxUnwrap: 2, silent: true });
+        const inner = robustCleanParse(t, {maxPasses: 3, maxUnwrap: 2, silent: true});
         return deepUnwrapStrings(inner, depth + 1);
       } catch {
         return value;
@@ -272,7 +282,7 @@ function deepUnwrapStrings(value, depth = 0) {
 }
 
 function robustCleanParse(raw, options = {}) {
-  const { maxPasses = 8, maxUnwrap = 5, silent = true } = options;
+  const {maxPasses = 8, maxUnwrap = 5, silent = true} = options;
   if (typeof raw !== 'string') throw new Error('Input must be a string.');
   const s = raw.trim();
   if (s.length === 0) throw new Error('Empty input.');
@@ -341,7 +351,8 @@ function main() {
     process.exit(1);
   }
 
-  const log = args.silent ? () => {} : (...a) => console.log(...a);
+  const log = args.silent ? () => {
+  } : (...a) => console.log(...a);
 
   log(`📖 Reading: ${inPath}`);
   const raw = fs.readFileSync(inPath, 'utf8');

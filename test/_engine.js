@@ -9,12 +9,15 @@
 function stripBOM(s) {
   return s.replace(/^\uFEFF/, '').replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u206F]/g, '');
 }
+
 function stripControlChars(s) {
   return s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 }
+
 function normalizeLineEndings(s) {
   return s.replace(/\r\n?/g, '\n').replace(/[\u2028\u2029]/g, '\n');
 }
+
 function extractFirstJsonLike(text) {
   const openers = { '{': '}', '[': ']' };
   let start = -1;
@@ -62,6 +65,7 @@ function extractFirstJsonLike(text) {
   const lastClose = Math.max(text.lastIndexOf('}'), text.lastIndexOf(']'));
   return lastClose > start ? text.slice(start, lastClose + 1) : text.slice(start);
 }
+
 function removeTrailingCommas(text) {
   let out = '';
   let inString = false;
@@ -89,6 +93,7 @@ function removeTrailingCommas(text) {
   }
   return out;
 }
+
 function singleToDoubleQuotes(text) {
   let out = '';
   let inDouble = false;
@@ -131,6 +136,7 @@ function singleToDoubleQuotes(text) {
   }
   return out;
 }
+
 function quoteUnquotedKeys(text) {
   let out = '';
   let inString = false;
@@ -171,11 +177,13 @@ function quoteUnquotedKeys(text) {
   }
   return out;
 }
+
 function collapseBackslashes(text) {
   return text.replace(/\\{2,}/g, (m) =>
     '\\'.repeat(m.length % 2 === 0 ? m.length / 2 : Math.ceil(m.length / 2)),
   );
 }
+
 function unescapeForwardSlash(text) {
   return text.replace(/\\\//g, '/');
 }

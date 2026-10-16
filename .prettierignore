@@ -8,9 +8,14 @@ coverage/
 
 # Generated
 cleanJson.json
+samples/clean.json
 rawdata.txt
 package-lock.json
 yarn.lock
+
+# Broken JSON fixtures (intentionally invalid)
+samples/messy.txt
+test/fixtures/messy.txt
 
 # Minified
 *.min.js

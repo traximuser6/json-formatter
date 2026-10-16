@@ -1,0 +1,13 @@
+Here is the data you requested:
+
+{
+  "userId": 42,
+  "name": 'Alice Johnson',
+  orders: [
+    { id: 'ORD-001', total: 99.50, items: [ { sku: 'A1', qty: 2, }, ] },
+    { id: 'ORD-002', total: 250.00, items: [ { sku: 'B7', qty: 1, }, ], },
+  ],
+  metadata: "{\"source\":\"api\",\"version\":\"1.0\"}"
+}
+
+— End of response —

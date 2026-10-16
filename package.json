@@ -1,0 +1,63 @@
+{
+  "name": "json-cleaner-formatter",
+  "version": "1.1.0",
+  "description": "Transform messy, malformed, or double-encoded JSON into clean, structured beauty — CLI + Web App",
+  "keywords": [
+    "json",
+    "json-cleaner",
+    "json-formatter",
+    "json-parser",
+    "json-repair",
+    "malformed-json",
+    "double-encoded-json",
+    "cli",
+    "developer-tools"
+  ],
+  "author": "Traxim",
+  "license": "MIT",
+  "homepage": "https://ttech-json-formatter.netlify.app/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/traximuser6/json-cleaner.git"
+  },
+  "bugs": {
+    "url": "https://github.com/traximuser6/json-cleaner/issues"
+  },
+  "type": "commonjs",
+  "main": "main.js",
+  "bin": {
+    "json-cleaner": "main.js"
+  },
+  "files": [
+    "main.js",
+    "script.js",
+    "index.html",
+    "style.css",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "scripts": {
+    "start": "node main.js",
+    "clean": "node main.js",
+    "clean:sample": "node main.js --input=samples/messy.json --output=samples/clean.json",
+    "clean:minify": "node main.js --minify",
+    "web:serve": "npx serve .",
+    "test": "node --test test/",
+    "test:watch": "node --test --watch test/",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{js,json,md,html,css}\"",
+    "format:check": "prettier --check \"**/*.{js,json,md,html,css}\"",
+    "verify": "npm run lint && npm run format:check && npm run test",
+    "prepublishOnly": "npm run verify"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "eslint": "^9.15.0",
+    "prettier": "^3.4.0"
+  }
+}

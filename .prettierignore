@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+tmp/
+coverage/
+.idea/
+.vscode/
+
+# Generated
+cleanJson.json
+rawdata.txt
+package-lock.json
+yarn.lock
+
+# Minified
+*.min.js
+*.min.css

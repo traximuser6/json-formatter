@@ -1,26 +1,39 @@
-.idea
-.vscode
-.phpIntel
-.DS_Store
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
 
-# ignore formats
-*.log
-*.tmp
-*.bak
+# CLI input/output (user-generated)
+rawdata.txt
+cleanJson.json
+
+# Test artifacts
+tmp/
+coverage/
+.nyc_output/
+
+# Build output
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.iml
 *.swp
-*.cache
-*.pid
-*.orig
-*.pyc
-*.pyo
-*.class
-*.jar
-*.war
-*.ear
-*.zip
-*.tar
-*.gz
-*.tgz
+*.swo
 
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
 
-.node_modules
+# Logs
+*.log
+
+# Env
+.env
+.env.local
+.env.*.local

@@ -34,9 +34,7 @@ const loader = document.getElementById('loader');
 // Diagnostics
 // ============================================================
 function logDiag(...args) {
-  const line = args
-    .map((a) => (typeof a === 'string' ? a : safeStringify(a)))
-    .join(' ');
+  const line = args.map((a) => (typeof a === 'string' ? a : safeStringify(a))).join(' ');
   const stamped = `[${new Date().toISOString()}] ${line}`;
   diagEl.textContent = stamped + '\n' + diagEl.textContent;
   console.log(stamped);
@@ -56,7 +54,7 @@ function safeStringify(v) {
 const MAX_INPUT = 5_000_000;
 
 function downloadText(filename, text) {
-  const blob = new Blob([text], {type: 'application/json'});
+  const blob = new Blob([text], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -70,10 +68,7 @@ function downloadText(filename, text) {
 function isProbablyStringifiedJson(s) {
   if (typeof s !== 'string') return false;
   const t = s.trim();
-  return (
-    (t.startsWith('{') && t.endsWith('}')) ||
-    (t.startsWith('[') && t.endsWith(']'))
-  );
+  return (t.startsWith('{') && t.endsWith('}')) || (t.startsWith('[') && t.endsWith(']'));
 }
 
 // ============================================================
@@ -92,7 +87,7 @@ function normalizeLineEndings(s) {
 }
 
 function extractFirstJsonLike(text) {
-  const openers = {'{': '}', '[': ']'};
+  const openers = { '{': '}', '[': ']' };
   let start = -1;
   for (let i = 0; i < text.length; i++) {
     if (text[i] === '{' || text[i] === '[') {
@@ -287,7 +282,9 @@ function quoteUnquotedKeys(text) {
 }
 
 function collapseBackslashes(text) {
-  return text.replace(/\\{2,}/g, (m) => '\\'.repeat(m.length % 2 === 0 ? m.length / 2 : Math.ceil(m.length / 2)));
+  return text.replace(/\\{2,}/g, (m) =>
+    '\\'.repeat(m.length % 2 === 0 ? m.length / 2 : Math.ceil(m.length / 2)),
+  );
 }
 
 function unescapeForwardSlash(text) {
@@ -313,7 +310,7 @@ function deepUnwrapStrings(value, depth = 0) {
     const t = value.trim();
     if (isProbablyStringifiedJson(t)) {
       try {
-        const inner = robustCleanParse(t, {maxPasses: 3, maxUnwrap: 2, silent: true});
+        const inner = robustCleanParse(t, { maxPasses: 3, maxUnwrap: 2, silent: true });
         return deepUnwrapStrings(inner, depth + 1);
       } catch {
         return value;
@@ -337,7 +334,7 @@ function deepUnwrapStrings(value, depth = 0) {
 }
 
 function robustCleanParse(raw, options = {}) {
-  const {maxPasses = 8, maxUnwrap = 5, silent = false} = options;
+  const { maxPasses = 8, maxUnwrap = 5, silent = false } = options;
 
   if (typeof raw !== 'string') throw new Error('Input must be a string.');
   const s = raw.trim();
@@ -374,10 +371,7 @@ function robustCleanParse(raw, options = {}) {
 
         const m = temp.match(/^\s*"(.*)"\s*$/s);
         if (m) {
-          const inner = m[1]
-            .replace(/\\"/g, '"')
-            .replace(/\\'/g, "'")
-            .replace(/\\\\/g, '\\');
+          const inner = m[1].replace(/\\"/g, '"').replace(/\\'/g, "'").replace(/\\\\/g, '\\');
           if (inner !== temp) {
             temp = inner;
             unwrapCount++;
@@ -415,9 +409,9 @@ function robustCleanParse(raw, options = {}) {
     trace.push(`fallback: ${e.message}`);
   }
 
-  if (!silent) logDiag('All repair attempts failed.', {trace});
+  if (!silent) logDiag('All repair attempts failed.', { trace });
   throw new Error(
-    `Unable to parse JSON after all repair attempts. ${trace[trace.length - 1] || ''}`
+    `Unable to parse JSON after all repair attempts. ${trace[trace.length - 1] || ''}`,
   );
 }
 
@@ -441,26 +435,90 @@ const isoDate = (daysBack = 365) => {
 };
 const isoDateShort = (daysBack = 365) => isoDate(daysBack).split('T')[0];
 
-const FIRST_NAMES = ['Zoe', 'Ava', 'Mia', 'Leo', 'Noah', 'Ivy', 'Eli', 'Aria', 'Kai', 'Luca',
-  'Sofia', 'Mason', 'Ruby', 'Ezra', 'Nora', 'Owen', 'Layla', 'Caleb'];
-const LAST_NAMES = ['Gannam', 'Chen', 'Patel', 'Nguyen', 'Khan', 'Smith', 'Garcia', 'Brown',
-  'Okafor', 'Rossi', 'Haddad', 'Yamamoto', 'Kowalski', 'Silva'];
-const CITIES = ['Karachi', 'Lahore', 'Islamabad', 'Dubai', 'London', 'New York',
-  'Tokyo', 'Berlin', 'Toronto', 'Sydney', 'São Paulo', 'Mumbai'];
+const FIRST_NAMES = [
+  'Zoe',
+  'Ava',
+  'Mia',
+  'Leo',
+  'Noah',
+  'Ivy',
+  'Eli',
+  'Aria',
+  'Kai',
+  'Luca',
+  'Sofia',
+  'Mason',
+  'Ruby',
+  'Ezra',
+  'Nora',
+  'Owen',
+  'Layla',
+  'Caleb',
+];
+const LAST_NAMES = [
+  'Gannam',
+  'Chen',
+  'Patel',
+  'Nguyen',
+  'Khan',
+  'Smith',
+  'Garcia',
+  'Brown',
+  'Okafor',
+  'Rossi',
+  'Haddad',
+  'Yamamoto',
+  'Kowalski',
+  'Silva',
+];
+const CITIES = [
+  'Karachi',
+  'Lahore',
+  'Islamabad',
+  'Dubai',
+  'London',
+  'New York',
+  'Tokyo',
+  'Berlin',
+  'Toronto',
+  'Sydney',
+  'São Paulo',
+  'Mumbai',
+];
 const COUNTRIES = ['PK', 'US', 'GB', 'DE', 'JP', 'AE', 'CA', 'AU', 'BR', 'IN'];
 const STREETS = ['Main St', 'Oak Ave', 'Park Rd', 'Elm St', 'Maple Dr', 'Baker St'];
-const COMPANIES = ['West Capital Lending', 'Nova Corp', 'Acme Inc', 'Blue Peak', 'Vertex',
-  'Quantum Labs', 'Aurora Systems', 'Bright Path'];
+const COMPANIES = [
+  'West Capital Lending',
+  'Nova Corp',
+  'Acme Inc',
+  'Blue Peak',
+  'Vertex',
+  'Quantum Labs',
+  'Aurora Systems',
+  'Bright Path',
+];
 const DOMAINS = ['example.com', 'acme.io', 'nova.co', 'lending.com', 'test.dev', 'demo.app'];
-const TITLES = ['Branch Manager', 'Senior Engineer', 'Product Lead', 'Analyst',
-  'Director', 'CTO', 'Designer', 'Data Scientist'];
+const TITLES = [
+  'Branch Manager',
+  'Senior Engineer',
+  'Product Lead',
+  'Analyst',
+  'Director',
+  'CTO',
+  'Designer',
+  'Data Scientist',
+];
 const DEPARTMENTS = ['Engineering', 'Sales', 'Marketing', 'Finance', 'Ops', 'Support'];
 const CATEGORIES = ['Electronics', 'Clothing', 'Books', 'Home', 'Sports', 'Beauty', 'Toys'];
 const BRANDS = ['Apple', 'Samsung', 'Sony', 'Nike', 'Adidas', 'LG', 'Dell', 'Bose'];
 const TAGS = ['new', 'sale', 'featured', 'limited', 'premium', 'eco', 'bestseller'];
-const LOREM = ['Lorem ipsum dolor sit amet', 'Consectetur adipiscing elit',
-  'Sed do eiusmod tempor incididunt', 'Ut labore et dolore magna aliqua',
-  'Ut enim ad minim veniam'];
+const LOREM = [
+  'Lorem ipsum dolor sit amet',
+  'Consectetur adipiscing elit',
+  'Sed do eiusmod tempor incididunt',
+  'Ut labore et dolore magna aliqua',
+  'Ut enim ad minim veniam',
+];
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'PKR', 'AED', 'JPY', 'INR'];
 const STATUSES = ['active', 'pending', 'shipped', 'delivered', 'cancelled', 'refunded'];
 
@@ -484,8 +542,8 @@ function genAddress() {
     city: pick(CITIES),
     country: pick(COUNTRIES),
     postalCode: String(rnd(10000, 99999)),
-    ...(maybe(0.4) ? {line2: `Apt ${rnd(1, 500)}`} : {}),
-    ...(maybe(0.3) ? {state: pick(['CA', 'NY', 'TX', 'FL', 'IL'])} : {}),
+    ...(maybe(0.4) ? { line2: `Apt ${rnd(1, 500)}` } : {}),
+    ...(maybe(0.3) ? { state: pick(['CA', 'NY', 'TX', 'FL', 'IL']) } : {}),
   };
 }
 
@@ -502,7 +560,9 @@ function genReview(depth) {
     author: genName(),
     verified: maybe(0.7),
     createdAt: isoDate(180),
-    ...(depth > 0 && maybe(0.3) ? {replies: Array.from({length: rnd(1, 3)}, () => genReview(0))} : {}),
+    ...(depth > 0 && maybe(0.3)
+      ? { replies: Array.from({ length: rnd(1, 3) }, () => genReview(0)) }
+      : {}),
   };
 }
 
@@ -522,22 +582,28 @@ function genProduct(depth = 2) {
     tags: pickMany(TAGS, rnd(0, 3)),
     inStock: maybe(0.8),
     stock: rnd(0, 500),
-    ...(maybe(0.6) ? {
-      images: Array.from({length: rnd(1, 4)}, (_, i) => ({
-        id: i + 1,
-        url: `https://cdn.${pick(DOMAINS)}/img/${uuid()}.jpg`,
-        alt: pick(LOREM),
-      }))
-    } : {}),
-    ...(depth > 0 && maybe(0.7) ? {reviews: Array.from({length: rnd(0, 4)}, () => genReview(1))} : {}),
-    ...(depth > 0 && maybe(0.4) ? {
-      variants: Array.from({length: rnd(1, 3)}, () => ({
-        sku: `VAR-${rnd(1000, 9999)}`,
-        color: pick(['red', 'blue', 'black', 'white', 'green']),
-        size: pick(['S', 'M', 'L', 'XL']),
-        priceDelta: rndF(-10, 20, 2),
-      }))
-    } : {}),
+    ...(maybe(0.6)
+      ? {
+          images: Array.from({ length: rnd(1, 4) }, (_, i) => ({
+            id: i + 1,
+            url: `https://cdn.${pick(DOMAINS)}/img/${uuid()}.jpg`,
+            alt: pick(LOREM),
+          })),
+        }
+      : {}),
+    ...(depth > 0 && maybe(0.7)
+      ? { reviews: Array.from({ length: rnd(0, 4) }, () => genReview(1)) }
+      : {}),
+    ...(depth > 0 && maybe(0.4)
+      ? {
+          variants: Array.from({ length: rnd(1, 3) }, () => ({
+            sku: `VAR-${rnd(1000, 9999)}`,
+            color: pick(['red', 'blue', 'black', 'white', 'green']),
+            size: pick(['S', 'M', 'L', 'XL']),
+            priceDelta: rndF(-10, 20, 2),
+          })),
+        }
+      : {}),
   };
 }
 
@@ -549,7 +615,7 @@ function genShipment() {
     status: pick(['label_created', 'in_transit', 'out_for_delivery', 'delivered']),
     shippedAt: isoDate(30),
     estimatedDelivery: isoDateShort(-10),
-    events: Array.from({length: rnd(1, 5)}, () => ({
+    events: Array.from({ length: rnd(1, 5) }, () => ({
       timestamp: isoDate(15),
       location: `${pick(CITIES)}, ${pick(COUNTRIES)}`,
       status: pick(['picked_up', 'in_transit', 'arrived', 'out_for_delivery']),
@@ -567,12 +633,12 @@ function genOrderItem(depth = 1) {
     unitPrice,
     discount: maybe(0.3) ? rndF(0, unitPrice * 0.3, 2) : 0,
     lineTotal: +(unitPrice * qty).toFixed(2),
-    ...(depth > 0 && maybe(0.5) ? {product: genProduct(0)} : {}),
+    ...(depth > 0 && maybe(0.5) ? { product: genProduct(0) } : {}),
   };
 }
 
 function genOrder(depth = 2) {
-  const items = Array.from({length: rnd(1, 5)}, () => genOrderItem(depth > 0 ? 1 : 0));
+  const items = Array.from({ length: rnd(1, 5) }, () => genOrderItem(depth > 0 ? 1 : 0));
   const subtotal = +items.reduce((s, i) => s + i.lineTotal, 0).toFixed(2);
   const tax = +(subtotal * 0.08).toFixed(2);
   const shipping = maybe(0.5) ? rndF(0, 25, 2) : 0;
@@ -583,8 +649,8 @@ function genOrder(depth = 2) {
       id: uuid(),
       name: genName(),
       email: genEmail(),
-      ...(maybe(0.6) ? {phone: genPhone()} : {}),
-      ...(maybe(0.5) ? {address: genAddress()} : {}),
+      ...(maybe(0.6) ? { phone: genPhone() } : {}),
+      ...(maybe(0.5) ? { address: genAddress() } : {}),
     },
     items,
     subtotal,
@@ -595,8 +661,8 @@ function genOrder(depth = 2) {
     status: pick(STATUSES),
     paymentMethod: pick(['card', 'paypal', 'apple_pay', 'bank_transfer', 'crypto']),
     createdAt: isoDate(180),
-    ...(depth > 0 && maybe(0.6) ? {shipment: genShipment()} : {}),
-    ...(depth > 0 && maybe(0.4) ? {notes: pick(LOREM)} : {}),
+    ...(depth > 0 && maybe(0.6) ? { shipment: genShipment() } : {}),
+    ...(depth > 0 && maybe(0.4) ? { notes: pick(LOREM) } : {}),
   };
 }
 
@@ -613,32 +679,38 @@ function genUser(depth = 2) {
     profile: {
       avatar: `https://avatars.${pick(DOMAINS)}/${uuid()}`,
       bio: pick(LOREM),
-      ...(maybe(0.6) ? {
-        social: {
-          twitter: `@${pick(FIRST_NAMES).toLowerCase()}${rnd(1, 99)}`,
-          ...(maybe(0.5) ? {github: `${pick(FIRST_NAMES).toLowerCase()}${rnd(1, 999)}`} : {}),
-        }
-      } : {}),
+      ...(maybe(0.6)
+        ? {
+            social: {
+              twitter: `@${pick(FIRST_NAMES).toLowerCase()}${rnd(1, 99)}`,
+              ...(maybe(0.5) ? { github: `${pick(FIRST_NAMES).toLowerCase()}${rnd(1, 999)}` } : {}),
+            },
+          }
+        : {}),
     },
     address: genAddress(),
-    ...(depth > 0 && maybe(0.7) ? {orders: Array.from({length: rnd(0, 3)}, () => genOrder(1))} : {}),
-    ...(depth > 0 && maybe(0.5) ? {
-      preferences: {
-        language: pick(['en', 'es', 'fr', 'de', 'ur']),
-        timezone: pick(['UTC', 'America/New_York', 'Asia/Karachi', 'Europe/London']),
-        notifications: {
-          email: maybe(0.9),
-          sms: maybe(0.5),
-          push: maybe(0.7),
-        },
-      }
-    } : {}),
+    ...(depth > 0 && maybe(0.7)
+      ? { orders: Array.from({ length: rnd(0, 3) }, () => genOrder(1)) }
+      : {}),
+    ...(depth > 0 && maybe(0.5)
+      ? {
+          preferences: {
+            language: pick(['en', 'es', 'fr', 'de', 'ur']),
+            timezone: pick(['UTC', 'America/New_York', 'Asia/Karachi', 'Europe/London']),
+            notifications: {
+              email: maybe(0.9),
+              sms: maybe(0.5),
+              push: maybe(0.7),
+            },
+          },
+        }
+      : {}),
     createdAt: isoDate(730),
   };
 }
 
 function genInvoice(depth = 1) {
-  const items = Array.from({length: rnd(1, 4)}, () => ({
+  const items = Array.from({ length: rnd(1, 4) }, () => ({
     description: pick(LOREM),
     quantity: rnd(1, 10),
     unitPrice: genMoney(),
@@ -651,18 +723,23 @@ function genInvoice(depth = 1) {
     issuedAt: isoDateShort(90),
     dueAt: isoDateShort(-30),
     currency: pick(CURRENCIES),
-    from: {company: pick(COMPANIES), address: genAddress(), taxId: `TAX-${rnd(100000, 999999)}`},
-    to: {name: genName(), email: genEmail(), address: genAddress()},
+    from: { company: pick(COMPANIES), address: genAddress(), taxId: `TAX-${rnd(100000, 999999)}` },
+    to: { name: genName(), email: genEmail(), address: genAddress() },
     items,
     subtotal: total,
     tax: +(total * 0.1).toFixed(2),
     total: +(total * 1.1).toFixed(2),
     status: pick(['draft', 'sent', 'paid', 'overdue']),
-    ...(depth > 0 && maybe(0.5) ? {
-      payments: Array.from({length: rnd(0, 3)}, () => ({
-        id: uuid(), amount: genMoney(), method: pick(['card', 'bank_transfer', 'paypal']), paidAt: isoDate(90),
-      }))
-    } : {}),
+    ...(depth > 0 && maybe(0.5)
+      ? {
+          payments: Array.from({ length: rnd(0, 3) }, () => ({
+            id: uuid(),
+            amount: genMoney(),
+            method: pick(['card', 'bank_transfer', 'paypal']),
+            paidAt: isoDate(90),
+          })),
+        }
+      : {}),
   };
 }
 
@@ -674,21 +751,30 @@ function genEvent(depth = 1) {
     startsAt: isoDate(-30),
     endsAt: isoDate(-30),
     location: genAddress(),
-    organizer: {name: genName(), email: genEmail(), ...(maybe(0.5) ? {phone: genPhone()} : {})},
-    ...(depth > 0 && maybe(0.8) ? {
-      attendees: Array.from({length: rnd(1, 6)}, () => ({
-        id: uuid(),
-        name: genName(),
-        email: genEmail(),
-        rsvp: pick(['yes', 'no', 'maybe', 'pending']),
-        ...(maybe(0.3) ? {dietary: pick(['vegetarian', 'vegan', 'gluten_free', 'halal'])} : {}),
-      }))
-    } : {}),
-    ...(depth > 0 && maybe(0.5) ? {
-      sessions: Array.from({length: rnd(1, 3)}, () => ({
-        title: pick(LOREM), speaker: genName(), startTime: isoDate(-30), durationMinutes: rnd(30, 120),
-      }))
-    } : {}),
+    organizer: { name: genName(), email: genEmail(), ...(maybe(0.5) ? { phone: genPhone() } : {}) },
+    ...(depth > 0 && maybe(0.8)
+      ? {
+          attendees: Array.from({ length: rnd(1, 6) }, () => ({
+            id: uuid(),
+            name: genName(),
+            email: genEmail(),
+            rsvp: pick(['yes', 'no', 'maybe', 'pending']),
+            ...(maybe(0.3)
+              ? { dietary: pick(['vegetarian', 'vegan', 'gluten_free', 'halal']) }
+              : {}),
+          })),
+        }
+      : {}),
+    ...(depth > 0 && maybe(0.5)
+      ? {
+          sessions: Array.from({ length: rnd(1, 3) }, () => ({
+            title: pick(LOREM),
+            speaker: genName(),
+            startTime: isoDate(-30),
+            durationMinutes: rnd(30, 120),
+          })),
+        }
+      : {}),
     tags: pickMany(TAGS, rnd(0, 3)),
     published: maybe(0.7),
   };
@@ -704,17 +790,24 @@ function genEmployee(depth = 1) {
     department: pick(DEPARTMENTS),
     salary: rnd(40_000, 200_000),
     hireDate: isoDateShort(2000),
-    manager: maybe(0.7) ? {id: uuid(), name: genName()} : null,
-    ...(depth > 0 && maybe(0.6) ? {
-      directReports: Array.from({length: rnd(0, 4)}, () => ({
-        employeeId: `EMP-${rnd(1000, 9999)}`, name: genName(), title: pick(TITLES),
-      }))
-    } : {}),
-    ...(depth > 0 && maybe(0.4) ? {
-      skills: pickMany(
-        ['JavaScript', 'Python', 'Go', 'Rust', 'SQL', 'Kubernetes', 'AWS', 'React'], rnd(1, 5),
-      )
-    } : {}),
+    manager: maybe(0.7) ? { id: uuid(), name: genName() } : null,
+    ...(depth > 0 && maybe(0.6)
+      ? {
+          directReports: Array.from({ length: rnd(0, 4) }, () => ({
+            employeeId: `EMP-${rnd(1000, 9999)}`,
+            name: genName(),
+            title: pick(TITLES),
+          })),
+        }
+      : {}),
+    ...(depth > 0 && maybe(0.4)
+      ? {
+          skills: pickMany(
+            ['JavaScript', 'Python', 'Go', 'Rust', 'SQL', 'Kubernetes', 'AWS', 'React'],
+            rnd(1, 5),
+          ),
+        }
+      : {}),
   };
 }
 
@@ -724,11 +817,14 @@ function genAnalytics() {
     period: pick(['1d', '7d', '30d', '90d']),
     total: rnd(100, 1_000_000),
     change: rndF(-50, 200, 2),
-    breakdown: Array.from({length: rnd(3, 7)}, () => ({
-      label: pick(CITIES), value: rnd(10, 10_000), share: rndF(0, 1, 4),
+    breakdown: Array.from({ length: rnd(3, 7) }, () => ({
+      label: pick(CITIES),
+      value: rnd(10, 10_000),
+      share: rndF(0, 1, 4),
     })),
-    timeline: Array.from({length: rnd(7, 30)}, (_, i) => ({
-      date: isoDateShort(30 - i), value: rnd(50, 5000),
+    timeline: Array.from({ length: rnd(7, 30) }, (_, i) => ({
+      date: isoDateShort(30 - i),
+      value: rnd(50, 5000),
     })),
   };
 }
@@ -737,12 +833,12 @@ function genGeoFeature() {
   return {
     type: 'Feature',
     id: uuid(),
-    geometry: {type: 'Point', coordinates: [rndF(-180, 180, 6), rndF(-90, 90, 6)]},
+    geometry: { type: 'Point', coordinates: [rndF(-180, 180, 6), rndF(-90, 90, 6)] },
     properties: {
       name: pick(CITIES),
       country: pick(COUNTRIES),
       population: rnd(10_000, 20_000_000),
-      ...(maybe(0.4) ? {timezone: pick(['UTC', 'Asia/Karachi', 'America/New_York'])} : {}),
+      ...(maybe(0.4) ? { timezone: pick(['UTC', 'Asia/Karachi', 'America/New_York']) } : {}),
     },
   };
 }
@@ -750,7 +846,7 @@ function genGeoFeature() {
 function genGeoJSON() {
   return {
     type: 'FeatureCollection',
-    features: Array.from({length: rnd(2, 5)}, genGeoFeature),
+    features: Array.from({ length: rnd(2, 5) }, genGeoFeature),
   };
 }
 
@@ -760,77 +856,94 @@ function genConfig() {
     version: `${rnd(1, 9)}.${rnd(0, 20)}.${rnd(0, 50)}`,
     environment: pick(['dev', 'staging', 'prod']),
     features: Object.fromEntries(
-      pickMany(['auth', 'payments', 'chat', 'search', 'analytics', 'notifications'], rnd(2, 5))
-        .map((f) => [f, maybe(0.8)]),
+      pickMany(['auth', 'payments', 'chat', 'search', 'analytics', 'notifications'], rnd(2, 5)).map(
+        (f) => [f, maybe(0.8)],
+      ),
     ),
     database: {
       host: `db.${pick(DOMAINS)}`,
       port: pick([5432, 3306, 27017]),
       ssl: maybe(0.9),
-      pool: {min: rnd(1, 5), max: rnd(10, 50)},
+      pool: { min: rnd(1, 5), max: rnd(10, 50) },
     },
-    ...(maybe(0.6) ? {
-      logging: {
-        level: pick(['debug', 'info', 'warn', 'error']),
-        outputs: pickMany(['stdout', 'file', 'syslog'], rnd(1, 3)),
-      }
-    } : {}),
-    ...(maybe(0.4) ? {
-      integrations: Array.from({length: rnd(1, 4)}, () => ({
-        name: pick(['stripe', 'twilio', 'sendgrid', 'slack', 'github']),
-        enabled: maybe(0.8),
-        apiKey: `sk_${uuid().replace(/-/g, '')}`,
-      }))
-    } : {}),
+    ...(maybe(0.6)
+      ? {
+          logging: {
+            level: pick(['debug', 'info', 'warn', 'error']),
+            outputs: pickMany(['stdout', 'file', 'syslog'], rnd(1, 3)),
+          },
+        }
+      : {}),
+    ...(maybe(0.4)
+      ? {
+          integrations: Array.from({ length: rnd(1, 4) }, () => ({
+            name: pick(['stripe', 'twilio', 'sendgrid', 'slack', 'github']),
+            enabled: maybe(0.8),
+            apiKey: `sk_${uuid().replace(/-/g, '')}`,
+          })),
+        }
+      : {}),
   };
 }
 
 function genBlogPost(depth = 1) {
   return {
     id: uuid(),
-    slug: pick(LOREM).toLowerCase().replace(/[^a-z]+/g, '-'),
+    slug: pick(LOREM)
+      .toLowerCase()
+      .replace(/[^a-z]+/g, '-'),
     title: pick(LOREM),
     excerpt: pick(LOREM),
     body: `${pick(LOREM)}. ${pick(LOREM)}. ${pick(LOREM)}.`,
-    author: {id: uuid(), name: genName(), avatar: `https://avatars.${pick(DOMAINS)}/${uuid()}`},
+    author: { id: uuid(), name: genName(), avatar: `https://avatars.${pick(DOMAINS)}/${uuid()}` },
     tags: pickMany(TAGS, rnd(1, 4)),
     published: maybe(0.8),
     publishedAt: isoDate(365),
-    stats: {views: rnd(0, 50_000), likes: rnd(0, 2000), comments: rnd(0, 200)},
-    ...(depth > 0 && maybe(0.7) ? {
-      comments: Array.from({length: rnd(0, 5)}, () => ({
-        id: uuid(), author: genName(), body: pick(LOREM), createdAt: isoDate(90),
-        ...(maybe(0.4) ? {
-          replies: Array.from({length: rnd(0, 3)}, () => ({
-            author: genName(), body: pick(LOREM), createdAt: isoDate(60),
-          }))
-        } : {}),
-      }))
-    } : {}),
+    stats: { views: rnd(0, 50_000), likes: rnd(0, 2000), comments: rnd(0, 200) },
+    ...(depth > 0 && maybe(0.7)
+      ? {
+          comments: Array.from({ length: rnd(0, 5) }, () => ({
+            id: uuid(),
+            author: genName(),
+            body: pick(LOREM),
+            createdAt: isoDate(90),
+            ...(maybe(0.4)
+              ? {
+                  replies: Array.from({ length: rnd(0, 3) }, () => ({
+                    author: genName(),
+                    body: pick(LOREM),
+                    createdAt: isoDate(60),
+                  })),
+                }
+              : {}),
+          })),
+        }
+      : {}),
   };
 }
 
 const ARCHETYPES = [
-  {name: 'user', gen: () => genUser(2)},
-  {name: 'users', gen: () => Array.from({length: rnd(2, 5)}, () => genUser(1))},
-  {name: 'order', gen: () => genOrder(2)},
-  {name: 'orders', gen: () => Array.from({length: rnd(2, 4)}, () => genOrder(1))},
-  {name: 'product', gen: () => genProduct(2)},
-  {name: 'products', gen: () => Array.from({length: rnd(3, 6)}, () => genProduct(1))},
-  {name: 'invoice', gen: () => genInvoice(1)},
-  {name: 'event', gen: () => genEvent(1)},
-  {name: 'employees', gen: () => Array.from({length: rnd(3, 8)}, () => genEmployee(1))},
-  {name: 'analytics', gen: () => genAnalytics()},
-  {name: 'geojson', gen: () => genGeoJSON()},
-  {name: 'config', gen: () => genConfig()},
-  {name: 'blogPost', gen: () => genBlogPost(1)},
+  { name: 'user', gen: () => genUser(2) },
+  { name: 'users', gen: () => Array.from({ length: rnd(2, 5) }, () => genUser(1)) },
+  { name: 'order', gen: () => genOrder(2) },
+  { name: 'orders', gen: () => Array.from({ length: rnd(2, 4) }, () => genOrder(1)) },
+  { name: 'product', gen: () => genProduct(2) },
+  { name: 'products', gen: () => Array.from({ length: rnd(3, 6) }, () => genProduct(1)) },
+  { name: 'invoice', gen: () => genInvoice(1) },
+  { name: 'event', gen: () => genEvent(1) },
+  { name: 'employees', gen: () => Array.from({ length: rnd(3, 8) }, () => genEmployee(1)) },
+  { name: 'analytics', gen: () => genAnalytics() },
+  { name: 'geojson', gen: () => genGeoJSON() },
+  { name: 'config', gen: () => genConfig() },
+  { name: 'blogPost', gen: () => genBlogPost(1) },
   {
-    name: 'mixedBundle', gen: () => ({
+    name: 'mixedBundle',
+    gen: () => ({
       user: genUser(1),
-      recentOrders: Array.from({length: rnd(1, 3)}, () => genOrder(1)),
-      recommended: Array.from({length: rnd(2, 4)}, () => genProduct(0)),
+      recentOrders: Array.from({ length: rnd(1, 3) }, () => genOrder(1)),
+      recommended: Array.from({ length: rnd(2, 4) }, () => genProduct(0)),
       config: genConfig(),
-    })
+    }),
   },
 ];
 
@@ -850,17 +963,14 @@ const BROKEN_VARIANTS = [
   (json) => JSON.stringify(JSON.stringify(json)),
   (json) => {
     const p = JSON.stringify(json, null, 2);
-    return p
-      .replace(/"([A-Za-z_][A-Za-z0-9_]*)":/g, "'$1':")
-      .replace(/: "([^"]*)"/g, ": '$1'");
+    return p.replace(/"([A-Za-z_][A-Za-z0-9_]*)":/g, "'$1':").replace(/: "([^"]*)"/g, ": '$1'");
   },
   (json) => {
     const p = JSON.stringify(json, null, 2);
-    return p
-      .replace(/([}\]"])(\n\s*[}\]])/g, '$1,$2')
-      .replace(/,\s*\n(\s*})/g, ',\n$1');
+    return p.replace(/([}\]"])(\n\s*[}\]])/g, '$1,$2').replace(/,\s*\n(\s*})/g, ',\n$1');
   },
-  (json) => `Here is the data you asked for:\n\n${JSON.stringify(json, null, 2)}\n\n— End of response —`,
+  (json) =>
+    `Here is the data you asked for:\n\n${JSON.stringify(json, null, 2)}\n\n— End of response —`,
   (json) => JSON.stringify(JSON.stringify(json)).replace(/\\\\"/g, '\\\\\\\\"'),
   (json) => {
     const p = JSON.stringify(json, null, 2)
@@ -868,7 +978,7 @@ const BROKEN_VARIANTS = [
       .replace(/: "([^"]*)"/g, ": '$1'");
     return p.replace(/}(\s*\n\s*[}\]])/g, '},$1');
   },
-  (json) => JSON.stringify({payload: JSON.stringify(json), meta: {ok: true}}),
+  (json) => JSON.stringify({ payload: JSON.stringify(json), meta: { ok: true } }),
   (json) => JSON.stringify(json, null, 2),
 ];
 
@@ -982,7 +1092,8 @@ minifyBtn.addEventListener('click', async () => {
   try {
     const parsed = robustCleanParse(raw);
     const minified = minifyJson(parsed);
-    if (!assertRoundTrip(minified)) throw new Error('Minified output failed round-trip validation.');
+    if (!assertRoundTrip(minified))
+      throw new Error('Minified output failed round-trip validation.');
     cleanEl.value = minified;
     const t = ((performance.now() - start) / 1000).toFixed(3);
     toastr.success(`Minified in ${t}s`);

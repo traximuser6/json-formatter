@@ -1,16 +1,19 @@
 /**
- * Shared repair engine — imported by both main.js and tests.
- * Keeping it separate avoids executing the CLI when running tests.
- * main.js re-exports/duplicates the same logic (or can require this file).
+ * engine.js — Repair pipeline (CommonJS for Node)
+ * Shared by src/cli.js and test files.
  */
 
 'use strict';
 
+const MAX_INPUT = 5_000_000;
+
 function stripBOM(s) {
+  // eslint-disable-next-line no-control-regex
   return s.replace(/^\uFEFF/, '').replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u206F]/g, '');
 }
 
 function stripControlChars(s) {
+  // eslint-disable-next-line no-control-regex
   return s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 }
 
@@ -118,8 +121,11 @@ function singleToDoubleQuotes(text) {
       } else if (ch === "'") {
         out += '"';
         inSingle = false;
-      } else if (ch === '"') out += '\\"';
-      else out += ch;
+      } else if (ch === '"') {
+        out += '\\"';
+      } else {
+        out += ch;
+      }
       continue;
     }
     if (ch === '"') {
@@ -165,7 +171,8 @@ function quoteUnquotedKeys(text) {
         out += text[i];
         i++;
       }
-      const m = /^([A-Za-z_$][A-Za-z0-9_$@\-]*)\s*:/.exec(text.slice(i));
+      // FIX: no useless escape — inside [] the "-" doesn't need escaping
+      const m = /^([A-Za-z_$][A-Za-z0-9_$@-]*)\s*:/.exec(text.slice(i));
       if (m) {
         out += '"' + m[1] + '":';
         i += m[0].length;
@@ -212,7 +219,7 @@ function deepUnwrapStrings(value, depth = 0) {
     const t = value.trim();
     if (isProbablyStringifiedJson(t)) {
       try {
-        const inner = robustCleanParse(t, { maxPasses: 3, maxUnwrap: 2 });
+        const inner = robustCleanParse(t, { maxPasses: 3, maxUnwrap: 2, silent: true });
         return deepUnwrapStrings(inner, depth + 1);
       } catch {
         return value;
@@ -229,15 +236,16 @@ function deepUnwrapStrings(value, depth = 0) {
 }
 
 function robustCleanParse(raw, options = {}) {
-  const { maxPasses = 8, maxUnwrap = 5 } = options;
+  const { maxPasses = 8, maxUnwrap = 5, silent = true } = options;
   if (typeof raw !== 'string') throw new Error('Input must be a string.');
   const s = raw.trim();
   if (s.length === 0) throw new Error('Empty input.');
+  if (s.length > MAX_INPUT) throw new Error(`Input too large (>${MAX_INPUT} bytes).`);
 
   try {
     return deepUnwrapStrings(JSON.parse(s));
-  } catch {
-    /* continue */
+  } catch (e) {
+    if (!silent) console.debug('[engine] fast-path failed:', e.message);
   }
 
   for (let pass = 0; pass <= maxPasses; pass++) {

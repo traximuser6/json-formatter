@@ -2,7 +2,7 @@
  * app.js — UI wiring (ES module)
  * ============================================================ */
 
-import { robustCleanParse } from './engine.js';
+import { robustCleanParse } from '../../src/engine.js';
 import { randomSample } from './sample.js';
 
 // ---------- DOM ----------

@@ -1,0 +1,30 @@
+{
+  "userId": 42,
+  "name": "Alice Johnson",
+  "orders": [
+    {
+      "id": "ORD-001",
+      "total": 99.5,
+      "items": [
+        {
+          "sku": "A1",
+          "qty": 2
+        }
+      ]
+    },
+    {
+      "id": "ORD-002",
+      "total": 250,
+      "items": [
+        {
+          "sku": "B7",
+          "qty": 1
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "source": "api",
+    "version": "1.0"
+  }
+}

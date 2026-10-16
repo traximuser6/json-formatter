@@ -47,6 +47,8 @@ export default [
       eqeqeq: ['error', 'always', { null: 'ignore' }],
       curly: ['error', 'multi-line'],
       'no-throw-literal': 'error',
+      'no-control-regex': 'off', // needed for control-char stripping
+      'no-useless-escape': 'warn', // we deliberately kept one escape
     },
   },
   {

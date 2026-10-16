@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { robustCleanParse } = require('./_engine.js');
+const { robustCleanParse } = require('../src/engine.js');
 
 const cases = [
   ['valid', '{"a":1}', { a: 1 }],
@@ -22,8 +22,7 @@ const cases = [
 
 for (const [name, input, expected] of cases) {
   test(`variant: ${name}`, () => {
-    const out = robustCleanParse(input);
-    assert.deepEqual(out, expected);
+    assert.deepEqual(robustCleanParse(input), expected);
   });
 }
 

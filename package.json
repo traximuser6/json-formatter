@@ -45,7 +45,7 @@
     "web:serve": "npx serve public",
     "web:dev": "npx live-server public --port=4500 --open=index.html",
     "test": "node --test test/",
-    "test:watch": "node --test --watch test/",
+    "test:watch": "node --test --watch test/*.test.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{js,mjs,json,md,html,css}\"",
